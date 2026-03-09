@@ -270,7 +270,7 @@ function KeyScreen:Show()
     infoText.Position = UDim2.new(0,24,0,310)
     infoText.BackgroundTransparency = 1
 
-    infoText.Text = "Free — 24 hours, basic features\nBasic ($2.99/wk) — 7 days, more features\nPremium ($4.99/wk) — 7 days, ALL features\n\nKeys are HWID-locked to one device."
+    infoText.Text = "Free — 24 hours\nBasic ($2.99/wk) — 7 days\nPremium ($4.99/wk) — 7 days, ALL features\n\nKeys are HWID-locked to one device."
     infoText.TextColor3 = C.TextDim
     infoText.Font = Enum.Font.Gotham
     infoText.TextSize = 11
