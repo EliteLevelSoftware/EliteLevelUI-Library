@@ -27,7 +27,7 @@ local KeyScreen = {}
 local CONFIG = {
     API_URL    = "https://elitelevelskripts.ngrok.dev",
     API_SECRET = "els-keysystem-2026-elk",
-    DISCORD_INVITE = "https://discord.gg/Nfvm8tVttW",
+    DISCORD_INVITE = "https://discord.gg/zqwMXttV",
     SAVE_FILE  = "ELS_Key.txt",
     
     COLORS = {
