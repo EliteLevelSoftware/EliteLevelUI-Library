@@ -1,30 +1,30 @@
 --[[
 
-    ██████╗ ██╗     ██╗████████╗███████╗    ██╗     ███████╗██╗   ██╗███████╗██╗
-    ██╔════╝ ██║     ██║╚══██╔══╝██╔════╝    ██║     ██╔════╝██║   ██║██╔════╝██║
-    █████╗   ██║     ██║   ██║   █████╗      ██║     █████╗  ██║   ██║█████╗  ██║
-    ██╔══╝   ██║     ██║   ██║   ██╔══╝      ██║     ██╔══╝  ╚██╗ ██╔╝██╔══╝  ██║
+    ██████╗ ██╗     ██╗████████╗███████╗    ██╗     ███████╗██╗   ██╗███████╗██╗     
+    ██╔════╝ ██║     ██║╚══██╔══╝██╔════╝    ██║     ██╔════╝██║   ██║██╔════╝██║     
+    █████╗   ██║     ██║   ██║   █████╗      ██║     █████╗  ██║   ██║█████╗  ██║     
+    ██╔══╝   ██║     ██║   ██║   ██╔══╝      ██║     ██╔══╝  ╚██╗ ██╔╝██╔══╝  ██║     
     ███████╗ ███████╗██║   ██║   ███████╗    ███████╗███████╗ ╚████╔╝ ███████╗███████╗
     ╚══════╝ ╚══════╝╚═╝   ╚═╝   ╚══════╝    ╚══════╝╚══════╝  ╚═══╝  ╚══════╝╚══════╝
-
+    
     Elite Level UI
     Rayfield-Compatible API Layer
-
+    
     Usage is identical to Rayfield:
-
+    
     local Rayfield = loadstring(...)()
     local Window = Rayfield:CreateWindow({ Name = "My Hub", ... })
     local Tab = Window:CreateTab("Tab Name", "icon-id")
     local Section = Tab:CreateSection("Section Name")
     Section:CreateToggle({ Name = "Toggle", CurrentValue = false, Callback = function(v) end })
-
+    
     All Rayfield methods are supported. Just change the loadstring.
-
+    
 ]]
 
 --// SECTION : Core Variables
 
-local Release = "v3.39"
+local Release = "v3.37"
 local debugV = false
 
 local EliteUI = {
@@ -58,6 +58,7 @@ local EliteUI = {
 
 --// SECTION : Services And Variables
 
+-- Services
 
 local function GetService(serviceName)
 	return cloneref ~= nil and cloneref(game:GetService(serviceName)) or game:GetService(serviceName)
@@ -65,10 +66,12 @@ end
 local Lighting = GetService("Lighting")
 local Players = GetService("Players")
 local Teams = GetService("Teams")
+local StatsService = GetService("Stats")
 local RunService = GetService("RunService")
 local UserInputService = GetService("UserInputService")
 local TweenService = GetService("TweenService")
 local HttpService = GetService("HttpService")
+local Localization = GetService("LocalizationService")
 local CollectionService = GetService("CollectionService")
 local TeleportService = GetService("TeleportService")
 local TextService = GetService("TextService")
@@ -87,15 +90,19 @@ local GuiInset, _ = GuiService:GetGuiInset()
 GuiInset = GuiInset.Y - 20
 local themeEvent = Instance.new("BindableEvent")
 
+
 local transparencyEvent = Instance.new("BindableEvent") -- fires when transparency changes
 local transparencyOverride = 0.5 -- default 50% transparency, overridden by saved state
 
 -- ════════════════════════════════════════════════════════════════
+-- LUCIDE ICONS INTEGRATION (same library as Rayfield)
 -- ════════════════════════════════════════════════════════════════
 local LucideIcons = nil
 local _iconsReady = false
+-- Queue of {imageLabel, iconInput} calls made before icons loaded
 local _iconQueue = {}
 
+-- Load Lucide icons asynchronously — does NOT block script startup
 task.spawn(function()
 	pcall(function()
 		if not isStudio then
@@ -106,6 +113,7 @@ task.spawn(function()
 		end
 	end)
 	_iconsReady = true
+	-- Flush any queued icon calls that arrived before icons were ready
 	for _, queued in ipairs(_iconQueue) do
 		pcall(function()
 			local lbl, inp = queued[1], queued[2]
@@ -127,8 +135,10 @@ task.spawn(function()
 end)
 
 -- Universal icon setter: handles both numeric asset IDs and Lucide string names
+-- Sets Image, ImageRectOffset, ImageRectSize on any ImageLabel/ImageButton
 local function setIcon(imageLabel, iconInput)
 	if not imageLabel then return end
+	-- Reset rect properties
 	imageLabel.ImageRectOffset = Vector2.new(0, 0)
 	imageLabel.ImageRectSize = Vector2.new(0, 0)
 
@@ -137,17 +147,20 @@ local function setIcon(imageLabel, iconInput)
 		return
 	end
 
+	-- Numeric asset ID (number or numeric string)
 	if type(iconInput) == "number" then
 		imageLabel.Image = "rbxassetid://" .. iconInput
 		return
 	end
 
 	if type(iconInput) == "string" then
+		-- Already a numeric asset ID string
 		if tonumber(iconInput) then
 			imageLabel.Image = "rbxassetid://" .. iconInput
 			return
 		end
 
+		-- Lucide icon name lookup
 		if LucideIcons then
 			local sizedIcons = LucideIcons['48px']
 			if sizedIcons then
@@ -172,6 +185,7 @@ local function setIcon(imageLabel, iconInput)
 			return
 		end
 
+		-- Fallback: try as raw asset ID anyway
 		if #iconInput > 0 then
 			imageLabel.Image = "rbxassetid://" .. iconInput
 		else
@@ -513,6 +527,7 @@ local Themes = {
 			}),
 		},
 	},
+	--Matcha = {},
 	["Deep Space"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(1, 4, 9),
@@ -790,7 +805,7 @@ local Themes = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(24, 24, 37),       -- base
 			Medium = Color3.fromRGB(30, 30, 46),     -- mantle
-			Light = Color3.fromRGB(30, 30, 46),
+			Light = Color3.fromRGB(30, 30, 46),     
 			Groupbox = Color3.fromRGB(30, 30, 46),
 			Highlight = Color3.fromRGB(49, 50, 68)  -- surface0
 		},
@@ -927,6 +942,7 @@ local Themes = {
 	},
 
 	-- ════════════════════════════════════════════════════════════════
+	-- NEW THEMES WITH TRANSPARENCY SUPPORT
 	-- ════════════════════════════════════════════════════════════════
 
 	Elite = {
@@ -1361,8 +1377,10 @@ local Themes = {
 		Transparency = 0.15,
 	},
 	-- ══════════════════════════════════════════════════════════
+	-- NEW THEMES (28 additional, bringing total to 61)
 	-- ══════════════════════════════════════════════════════════
 
+	-- Elite2: Very dark high-gloss green with golden accents
 	["Elite2"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(5, 14, 8),
@@ -1399,6 +1417,7 @@ local Themes = {
 		Transparency = 0.1,
 	},
 
+	-- Dracula: Popular IDE theme - deep purple-gray with pink/green/purple accents
 	["Dracula"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(40, 42, 54),
@@ -1435,6 +1454,7 @@ local Themes = {
 		Transparency = 0.15,
 	},
 
+	-- Monokai: Classic dark editor theme - warm blacks with orange/yellow/green
 	["Monokai"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(39, 40, 34),
@@ -1471,6 +1491,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Nord: Cool blue-gray Scandinavian palette
 	["Nord"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(46, 52, 64),
@@ -1507,6 +1528,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Solarized Dark: Precision dark theme with yellow/blue accents
 	["Solarized Dark"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(0, 43, 54),
@@ -1543,6 +1565,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Gruvbox: Retro warm dark - brown/orange tones
 	["Gruvbox"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(40, 40, 40),
@@ -1579,6 +1602,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Spotify: Dark with signature green
 	["Spotify"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(18, 18, 18),
@@ -1615,6 +1639,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Discord: Blurple-tinted dark
 	["Discord"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(49, 51, 56),
@@ -1651,6 +1676,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- GitHub Dark: Dark gray with blue accents
 	["GitHub Dark"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(13, 17, 23),
@@ -1687,6 +1713,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- VS Code: Classic VS Code dark theme
 	["VS Code"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(30, 30, 30),
@@ -1723,6 +1750,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Lava: Deep volcanic reds and oranges
 	["Lava"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(15, 5, 3),
@@ -1759,6 +1787,7 @@ local Themes = {
 		Transparency = 0.1,
 	},
 
+	-- Ocean Depths: Deep sea blues and teals
 	["Ocean Depths"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(5, 15, 25),
@@ -1795,6 +1824,7 @@ local Themes = {
 		Transparency = 0.2,
 	},
 
+	-- Midnight Blue: Rich navy with electric blue
 	["Midnight Blue"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(10, 12, 30),
@@ -1831,6 +1861,7 @@ local Themes = {
 		Transparency = 0.15,
 	},
 
+	-- Amber: Warm amber/honey tones on dark brown
 	["Amber"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(18, 14, 8),
@@ -1867,6 +1898,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Bubblegum: Light playful pink/pastel
 	["Bubblegum"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(245, 225, 235),
@@ -1903,6 +1935,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Mint: Fresh light green/mint
 	["Mint"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(225, 242, 235),
@@ -1939,6 +1972,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Carbon: Industrial dark gray/steel
 	["Carbon"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(22, 22, 22),
@@ -1975,6 +2009,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Synthwave: Retro neon 80s purple/pink/cyan
 	["Synthwave"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(18, 8, 32),
@@ -2011,6 +2046,7 @@ local Themes = {
 		Transparency = 0.2,
 	},
 
+	-- Lavender: Soft purple/lilac
 	["Lavender"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(235, 228, 245),
@@ -2047,6 +2083,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Copper: Warm metallic copper/bronze
 	["Copper"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(20, 14, 10),
@@ -2083,6 +2120,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Matrix: Black with bright green terminal text
 	["Matrix"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(0, 4, 0),
@@ -2119,6 +2157,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Moonstone: Pale blue-gray iridescent
 	["Moonstone"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(20, 22, 28),
@@ -2155,6 +2194,7 @@ local Themes = {
 		Transparency = 0.15,
 	},
 
+	-- Blood Moon: Dark red/crimson with black
 	["Blood Moon"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(12, 4, 4),
@@ -2191,6 +2231,7 @@ local Themes = {
 		Transparency = 0.1,
 	},
 
+	-- Sand: Desert warm neutrals
 	["Sand"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(235, 222, 200),
@@ -2227,6 +2268,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Neon Lime: Dark with electric lime green
 	["Neon Lime"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(10, 12, 8),
@@ -2263,6 +2305,7 @@ local Themes = {
 		Transparency = 0.15,
 	},
 
+	-- Slate: Professional blue-gray
 	["Slate"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(15, 23, 42),
@@ -2299,6 +2342,7 @@ local Themes = {
 		Transparency = 0,
 	},
 
+	-- Coral: Warm coral/salmon tones on dark
 	["Coral"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(18, 12, 12),
@@ -2335,6 +2379,7 @@ local Themes = {
 		Transparency = 0.1,
 	},
 
+	-- Twilight: Deep indigo fading to warm horizon
 	["Twilight"] = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(12, 10, 22),
@@ -2402,6 +2447,7 @@ local connections = {}
 
 --// SECTION : Methods
 
+-- used so the index system allows for universal linking without breaking
 local function GetNestedValue(tbl, path)
 	local current = tbl
 	for segment in string.gmatch(path, "[^%.]+") do
@@ -2427,6 +2473,7 @@ local ClassInterfacer = {
 	["Label"] = {},
 	["Paragraph"] = {},
 	["Divider"] = {},
+	--["Image"] = {}, ["Viewport"] = {}, ["Stepper"] = {}, ["Radio"] = {},
 	["Bind"] = {
 		"CurrentValue",
 	},
@@ -2507,6 +2554,7 @@ local ConfigMethods = {
 local ThemeMethods = {
 	bindTheme = function(object: GuiObject, property, themeKey)
 		local function set()
+			-- Guard: skip if object was destroyed (Parent == nil and not parented to nil intentionally)
 			if not object or not object.Parent then return end
 			pcall(function()
 				if
@@ -2590,6 +2638,8 @@ local ThemeMethods = {
 	end,
 }
 
+-- Removes item from a provided table via the value of the item
+-- and tablre is not a typo, table was already taken by roblox's core scripting
 function Table.Remove(tablre: table, value)
 	for i, v in pairs(tablre) do
 		if v == value then
@@ -2608,6 +2658,7 @@ function Color.Pack(Color: table)
 	return Color3.fromRGB(Color.R, Color.G, Color.B)
 end
 
+--[=[
 -- Creates the BlurBehind Effect for the transparent theme
 local function BlurModule(Frame : Frame)
 	local universalDof;
@@ -2790,6 +2841,7 @@ local function BlurModule(Frame : Frame)
 		local cframes = table.create(#BlursList, workspace.CurrentCamera.CFrame)
 		workspace:BulkMoveTo(PartsList, cframes, Enum.BulkMoveMode.FireCFrameChanged)
 
+		--blurObject.FocusDistance = 0.25 - Camera.NearPlaneZ
 	end
 
 	function BlurredGui:Destroy()
@@ -2805,6 +2857,8 @@ local function BlurModule(Frame : Frame)
 end
 ]=]
 
+-- Unpacks A Table, Returning it as string containing a list of the values
+--[Obsolete "So apparently... theres a function called table.concat and it does exactly what this does. So yea, i didnt know lmao"]
 function Table.Unpack(array: table)
 	local val = ""
 	for _, v in pairs(array) do
@@ -2830,6 +2884,8 @@ end
 
 --// SUBSECTION : Window Methods
 
+-- this is a way to allow for tweening cus roblox doesnt have opacity yet and my lazy ass is not gonna be able to set each and every value without crashing out - also this makes it extremely future/change proof
+-- Table for Transparency Values Of All Instances
 local TransparencyValues = {
 	["TEMPLATE"] = {
 		BackgroundTransparency = nil,
@@ -2838,6 +2894,7 @@ local TransparencyValues = {
 		ImageTransparency = nil,
 	},
 }
+-- sometimes it breaks for no reason, so just throw nothing if it does to prevent errors
 setmetatable(TransparencyValues, {
 	__index = function()
 		return
@@ -2846,10 +2903,12 @@ setmetatable(TransparencyValues, {
 
 local oldSizeX, oldSizeY, oldPosX, oldPosY
 
+-- Hides the given object
 local function Hide(Interface, JustHide: boolean?, Notify: boolean?, Bind: string?)
 	JustHide = JustHide or false
 
 	TransparencyValues[Interface.Name] = TransparencyValues[Interface.Name] or {}
+	-- Clear Table
 	table.clear(TransparencyValues[Interface.Name])
 
 	for i, v in pairs(Interface:GetDescendants()) do
@@ -2865,6 +2924,7 @@ local function Hide(Interface, JustHide: boolean?, Notify: boolean?, Bind: strin
 			and v.ClassName ~= "UISizeConstraint"
 			and v.ClassName ~= "UIAspectRatioConstraint"
 		then
+			-- Create And Set Subtables
 			if JustHide == false then
 				v:SetAttribute("InstanceID", HttpService:GenerateGUID(false)) -- we are doing this cus roblox fucking removed/disabled the UniqueId feature, and stuff might have the same name
 
@@ -2889,11 +2949,14 @@ local function Hide(Interface, JustHide: boolean?, Notify: boolean?, Bind: strin
 						v.ImageTransparency
 				end
 
+				-- do this cus roblox gui stuff have a although deprecated class, its still accesible by scripts
+				-- and sets text and transparency values which is smth we dont want
 				if v.ClassName == "UIStroke" or v.ClassName == "UIGradient" then
 					TransparencyValues[Interface.Name][v:GetAttribute("InstanceID")].Transparency = v.Transparency
 				end
 			end
 
+			-- Actually Hide The Stuff
 			if v.ClassName == "Frame" then
 				Tween(v, { BackgroundTransparency = 1 })
 			end
@@ -2943,12 +3006,15 @@ local function Hide(Interface, JustHide: boolean?, Notify: boolean?, Bind: strin
 					Interface.ImageTransparency
 			end
 
+			-- do this cus roblox gui stuff have a although deprecated class, its still accesible by scripts
+			-- and sets text and transparency values which is smth we dont want
 			if Interface.ClassName == "UIStroke" or Interface.ClassName == "UIGradient" then
 				TransparencyValues[Interface.Name][Interface:GetAttribute("InstanceID")].Transparency =
 					Interface.Transparency
 			end
 		end
 
+		-- Actually Hide The Stuff
 		if Interface.ClassName == "Frame" then
 			Tween(Interface, { BackgroundTransparency = 1 })
 		end
@@ -2971,7 +3037,8 @@ local function Hide(Interface, JustHide: boolean?, Notify: boolean?, Bind: strin
 			Tween(Interface, { Transparency = 1 })
 		end
 	end
-
+	
+	-- hide popups
 	if not isStudio and EliteUI.Instance.MobileToggle.Visible then
 		InputManager:SendTouchEvent(
 			0, 0, 0, 0
@@ -2989,6 +3056,7 @@ local function Hide(Interface, JustHide: boolean?, Notify: boolean?, Bind: strin
 			0, 0, 0, false, game, 0
 		)
 	end
+
 
 	task.wait(0.18)
 	if Interface.ClassName == "ScreenGui" then
@@ -3018,6 +3086,7 @@ local function Hide(Interface, JustHide: boolean?, Notify: boolean?, Bind: strin
 	EliteUI.Minimized = true
 end
 
+-- Unhides the given object which has been hidden by hide
 local function Unhide(Interface)
 	if Interface.ClassName == "ScreenGui" then
 		Interface.Enabled = true
@@ -3183,6 +3252,7 @@ local function Unhide(Interface)
 	EliteUI.Minimized = false
 end
 
+-- Maximizes the window
 local function Maximize(Window: Frame)
 	oldSizeX = Window.Size.X.Offset
 	oldSizeY = Window.Size.Y.Offset
@@ -3195,6 +3265,7 @@ local function Maximize(Window: Frame)
 	EliteUI.Maximized = true
 end
 
+-- Unmaximizes the window and sets it to its previous size
 local function Unmaximize(Window: Frame, Dragging: boolean?)
 	Dragging = Dragging or false
 
@@ -3208,6 +3279,7 @@ local function Unmaximize(Window: Frame, Dragging: boolean?)
 	EliteUI.Maximized = false
 end
 
+-- Add a tooltip to the element
 local function AddToolTip(InfoStr, HoverInstance)
 	local label = Instance.new("TextLabel")
 	label.Text = InfoStr or ""
@@ -3312,6 +3384,7 @@ local function AddToolTip(InfoStr, HoverInstance)
 	return label
 end
 
+-- A Function to make an object movable via dragging another object
 
 local function makeDraggable(Bar, Window: Frame, dragBar, enableTaptic, tapticOffset)
 	pcall(function()
@@ -3460,40 +3533,46 @@ end
 
 --// SECTION : Interface Management
 
+-- Interface Model
 local modelId = debugV and 136653172778765 or 90058405618888
 
 local EliteUIInstance: ScreenGui = isStudio and script.Parent:WaitForChild("EliteUI V1")
 	or game:GetObjects("rbxassetid://" .. modelId)[1]
+local buildAttempts = 0
+local correctBuild = false
+local warned = false
 
-if EliteUIInstance.Resources:FindFirstChild("Build")
-	and EliteUIInstance.Resources.Build.Value == EliteUI.InterfaceBuild
-then
-	correctBuild = true
-end
+repeat
+	if
+		EliteUIInstance.Resources:FindFirstChild("Build")
+		and EliteUIInstance.Resources.Build.Value == EliteUI.InterfaceBuild
+	then
+		correctBuild = true
+		break
+	end
 
-if not correctBuild then
-	warn("[EliteUI] Build mismatch — expected " .. tostring(EliteUI.InterfaceBuild)
-		.. ", got " .. tostring(EliteUIInstance.Resources:FindFirstChild("Build")
-		and EliteUIInstance.Resources.Build.Value or "nil")
-		.. ". Continuing with loaded build.")
-end
+	toDestroy, EliteUIInstance =
+		EliteUIInstance,
+		isStudio and script.Parent:FindFirstChild("EliteUI V1") or game:GetObjects("rbxassetid://" .. modelId)[1]
+	if toDestroy and not isStudio then
+		toDestroy:Destroy()
+	end
+
+	buildAttempts += 1
+
+until buildAttempts >= 2
 
 EliteUIInstance.Name = (((getgenv and getgenv().InterfaceName) or EliteUIInstance.Name) or "Elite Level Interface Suite")
 EliteUI.Instance = EliteUIInstance
 EliteUIInstance.Enabled = false
 
-do
-	local toRemove = {}
-	for _, obj in ipairs(EliteUIInstance:GetDescendants()) do
-		if obj:IsA("LocalScript") or obj:IsA("Script") or obj:IsA("ModuleScript")
-			or obj:IsA("BasePart") or obj:IsA("Model") or obj:IsA("Attachment")
-			or obj:IsA("Constraint") or obj:IsA("BodyMover")
-			or obj:IsA("WorldModel")
-		then
-			table.insert(toRemove, obj)
-		end
-	end
-	for _, obj in ipairs(toRemove) do
+-- Remove any scripts or 3D/physics objects from model template
+for _, obj in ipairs(EliteUIInstance:GetDescendants()) do
+	if obj:IsA("LocalScript") or obj:IsA("Script") or obj:IsA("ModuleScript")
+		or obj:IsA("BasePart") or obj:IsA("Model") or obj:IsA("Attachment")
+		or obj:IsA("Constraint") or obj:IsA("BodyMover")
+		or obj:IsA("WorldModel")
+	then
 		pcall(function() obj:Destroy() end)
 	end
 end
@@ -3504,6 +3583,7 @@ if not isStudio then
 	end)
 end
 
+-- Sets The Interface Into Roblox's GUI
 if gethui then
 	EliteUIInstance.Parent = gethui()
 elseif syn and syn.protect_gui then
@@ -3516,10 +3596,12 @@ elseif not isStudio then
 	EliteUIInstance.Parent = CoreGui
 end
 
+-- hides all old interfaces
 if gethui then
 	for _, Interface in ipairs(gethui():GetChildren()) do
 		if Interface.Name == EliteUIInstance.Name and Interface ~= EliteUIInstance then
 			Hide(Interface, true)
+			--task.wait()
 			Interface:Destroy()
 		end
 	end
@@ -3527,6 +3609,7 @@ elseif not isStudio and CoreGui:FindFirstChild("RobloxGui") then
 	for _, Interface in ipairs(CoreGui:FindFirstChild("RobloxGui"):GetChildren()) do
 		if Interface.Name == EliteUIInstance.Name and Interface ~= EliteUIInstance then
 			Hide(Interface, true)
+			--task.wait()
 			Interface:Destroy()
 		end
 	end
@@ -3534,6 +3617,7 @@ elseif not isStudio then
 	for _, Interface in ipairs(CoreGui:GetChildren()) do
 		if Interface.Name == EliteUIInstance.Name and Interface ~= EliteUIInstance then
 			Hide(Interface, true)
+			--task.wait()
 			Interface:Destroy()
 		end
 	end
@@ -3541,11 +3625,13 @@ else
 	for _, Interface in ipairs(PlayerGui:GetChildren()) do
 		if Interface.Name == EliteUIInstance.Name and Interface ~= EliteUIInstance then
 			Hide(Interface, true)
+			--task.wait()
 			Interface:Destroy()
 		end
 	end
 end
 
+-- sets the starting variables
 EliteUIInstance.MainWindow.Visible = false
 EliteUIInstance.MainWindow.AnchorPoint = Vector2.zero
 EliteUIInstance.MainWindow.Position = UDim2.fromOffset(
@@ -3564,6 +3650,7 @@ if _dragEl then
 			+ 10
 	)
 end
+-- Module-level safe reference used everywhere instead of bare EliteDrag
 local EliteDrag = _dragEl
 
 --// SUBSECTION : Interface Variables
@@ -3573,9 +3660,11 @@ local Resources = EliteUIInstance.Resources
 local navigation: Frame = mainWindow.Sidebar.Navigation
 local tabs: Frame = mainWindow.Content.ContentMain.Elements
 local Resizing = false
+local ResizeType = nil
 
 local GUICanvasSize = { X = Camera.ViewportSize.X, Y = Camera.ViewportSize.Y - GuiInset }
 
+-- Resize constants
 local RESIZE_HANDLE_PX = 6
 local RESIZE_CORNER_PX = 14
 local RESIZE_MIN_W = 450
@@ -3586,6 +3675,7 @@ local RESIZE_MIN_H = 300
 if UserInputService.TouchEnabled then
 	EliteUIInstance.Notifications.Interactable = false
 end
+-- Notifications should never steal input focus regardless of device
 pcall(function() EliteUIInstance.Notifications.Active = false end)
 
 if PlayerGui:FindFirstChild("TouchGui") then
@@ -3611,6 +3701,7 @@ end
 
 --// SECTION : Library Methods
 
+-- Sets what to do on destruction
 function EliteUI:OnDestroy(func)
 	EliteUI.DestroyFunction = func
 end
@@ -3622,6 +3713,7 @@ function EliteUI:Destroy()
 end
 EliteUIInstance.Destroying:Connect(function()
 	pcall(EliteUI.DestroyFunction)
+	-- Close all registered sub windows
 	for _, sw in ipairs(EliteUI.SubWindows) do
 		pcall(function() sw:Destroy() end)
 	end
@@ -3641,6 +3733,7 @@ EliteUIInstance.Destroying:Connect(function()
 		for _, blur in pairs(Camera:FindFirstChild("EliteUI Blur Elements"):GetChildren()) do
 			blur:Destroy()
 		end
+		--Camera:FindFirstChild("EliteUI Blur Elements"):Destroy()
 	end
 end)
 
@@ -3654,6 +3747,7 @@ function EliteUI:Notification(data)
 	}
 	]]
 
+	--[[if not correctBuild and not warned then
 		warned = true
 		warn('EliteUI | Build Mismatch')
 		warn('EliteUI may run into issues as it seems you are running an incompatible interface version ('.. (EliteUIInstance.Resources:FindFirstChild("Build") and EliteUIInstance.Resources:FindFirstChild("Build").Value or 'No Build') ..'). of EliteUI\n\nThis version of EliteUI is intended for interface build '..EliteUI.InterfaceBuild..'.\nTry rerunning the script. If the issue persists, join our discord for support.')
@@ -3669,12 +3763,14 @@ function EliteUI:Notification(data)
 	task.spawn(function()
 		local creationTime = tick()
 
+		-- Notification Object Creation
 		local newNotification = Resources.Elements.NotificationTemplate:Clone()
 		newNotification.Name = data.Title
 		newNotification.Parent = EliteUIInstance.Notifications
 		newNotification.LayoutOrder = #EliteUIInstance.Notifications:GetChildren()
 		newNotification.Visible = false
 
+		-- Prevent notification from stealing input focus or closing dropdowns
 		pcall(function() newNotification.Active = false end)
 		pcall(function() newNotification.Interactable = false end)
 		for _, desc in ipairs(newNotification:GetDescendants()) do
@@ -3709,14 +3805,17 @@ function EliteUI:Notification(data)
 		end)
 		table.insert(connections, _notifTimeConn)
 
+		-- Set Data
 		newNotification.Title.Text = data.Title
 		newNotification.Description.Text = data.Content
 		setIcon(newNotification.Icon, data.Icon)
 
+		-- Set initial transparency values
 		Hide(newNotification, false, false, false)
 
 		task.wait()
 
+		-- Calculate textbounds and set initial values
 		newNotification.Size =
 			UDim2.new(1, 0, 0, -EliteUIInstance.Notifications:FindFirstChild("UIListLayout").Padding.Offset)
 
@@ -3795,6 +3894,7 @@ function EliteUI:Notification(data)
 				)
 				:Play()
 
+			-- Theme Binding
 			do
 				ThemeMethods.bindTheme(newNotification, "BackgroundColor3", "Backgrounds.Medium")
 				ThemeMethods.bindTheme(newNotification.UIStroke, "Color", "Foregrounds.Dark")
@@ -3886,14 +3986,16 @@ function EliteUI:Notification(data)
 	end)
 end
 
+-- Create the Window
 function EliteUI:CreateWindow(WindowSettings)
+	-- The Options Table
 	--[[
-
+	
 	WindowSettings = {
 		Name = string,
 		Subtitle = string,
 		Icon = number (asset id), **
-
+		
 		LoadingEnabled = bool,
 		LoadingSettings = {
 			Style = number,
@@ -3901,43 +4003,44 @@ function EliteUI:CreateWindow(WindowSettings)
 			Subtitle = string,
 			Logo = number (asset id), **
 		},
-
+		
 		BuildWarnings = bool, **
 		InterfaceAdvertisingPrompts = bool, **
 		NotifyOnCallbackError = bool,
-
+		
 		FileSettings = {
 			RootFolder = string, **
-			ConfigFolder = string,**
+			ConfigFolder = string,**  
 			ThemeFolder = string, **
 		},
-
+		
 		DefaultSize = UDim2, **
-
+		
 		KeySystem = {
 			Enabled = bool,
 			Title = string, ****
 			Subtitle = string, ****
 			Note = string, ****
-
+			
 			SaveKey = bool, ****
 			KeyFile = string, ****
-
+			
 			KeyObtainLink = string, ****
 			Discord = string, ****
-
+			
 			HttpKey = bool, ****
 			Keys = {string, string...}, ****
 		},
-
+		
 		Discord = { -- u can still have it in the home tab, this is just auto join
 			Enabled = bool,
 			RememberJoins = bool, ****
 			Link = string ****
 		},
 	}
-
+	
 	]]
+	--
 
 	if
 		not correctBuild
@@ -4011,7 +4114,9 @@ function EliteUI:CreateWindow(WindowSettings)
 
 	--// SUBSECTION : Initial Code
 	do
+		-- Transparency event handler (acrylic removed, transparency slider still works)
 		transparencyEvent.Event:Connect(function()
+			-- Calculate effective transparency from theme + override
 			local themeAlpha = 0
 			if EliteUI.CurrentTheme and EliteUI.CurrentTheme.Transparency then
 				themeAlpha = EliteUI.CurrentTheme.Transparency
@@ -4079,6 +4184,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			mainWindow.Sidebar.Icon.Image = ""
 		end
 		mainWindow.Sidebar.Header.Text = WindowSettings.Name or ""
+		-- Match sidebar header style to selected tab appearance
 		mainWindow.Sidebar.Header.TextSize = 15
 		mainWindow.Sidebar.Header.Font = Enum.Font.GothamBold
 		mainWindow.Content.Topbar.Headers.Subheader.Text = WindowSettings.Subtitle or ""
@@ -4086,6 +4192,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			or "rbxassetid://6031097229"
 
 		local size = mainWindow.Size
+		-- Read any saved window state early so we can use saved position/size
 		local _savedState = EliteUI._readSavedState and EliteUI:_readSavedState() or nil
 		local _targetSize = size
 		local _targetPos = nil
@@ -4099,6 +4206,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			if _savedState.PosX and _savedState.PosY then
 				_targetPos = UDim2.fromOffset(_savedState.PosX, _savedState.PosY)
 			end
+			-- Apply theme/transparency early
 			pcall(function()
 				if _savedState.Theme and Themes[_savedState.Theme] then
 					EliteUI:SetTheme(_savedState.Theme)
@@ -4110,6 +4218,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				end
 			end)
 		end
+		-- Compute centered position as fallback
 		local _centeredPos = UDim2.fromOffset(
 			Camera.ViewportSize.X / 2 - (_targetSize.X.Offset or size.X.Offset) / 2,
 			((Camera.ViewportSize.Y / 2 - GuiInset) - (_targetSize.Y.Offset or size.Y.Offset) / 2) - (GuiInset / 2)
@@ -4132,6 +4241,7 @@ function EliteUI:CreateWindow(WindowSettings)
 		)
 
 		mainWindow.ModalOverlay.Visible = false
+		--[[mainWindow["Loading Screen"].Version.Text = WindowSettings.LoadingSettings.Title == "Elite Level Interface Suite" and Release or "EliteUI " .. Release
 		mainWindow["Loading Screen"].Frame.SubFrame.Title.Text = WindowSettings.LoadingSettings.Title or ""
 		mainWindow["Loading Screen"].Frame.SubFrame.Subtitle.Text = WindowSettings.LoadingSettings.Subtitle or ""]]
 		if WindowSettings.LoadingSettings then
@@ -4148,6 +4258,7 @@ function EliteUI:CreateWindow(WindowSettings)
 		mainWindow.Sidebar.Player.Header.Text = Player.DisplayName
 		mainWindow.Sidebar.Player.subheader.Text = Player.Name
 
+		-- Player info visibility toggle (eye icon button)
 		do
 			local playerSection = mainWindow.Sidebar.Player
 			local playerVisible = true
@@ -4199,6 +4310,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			end)
 		end
 
+		-- Preload assets async — does not block UI startup
 		task.spawn(function()
 			ContentProvider:PreloadAsync({
 				"rbxassetid://116767744785553", -- cursor
@@ -4223,6 +4335,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			end)
 		end)
 
+		-- Theme Binding
 		do
 			ThemeMethods.bindTheme(EliteUIInstance.MobileToggle.Backdrop, "BackgroundColor3", "Backgrounds.Dark")
 			ThemeMethods.bindTheme(EliteUIInstance.MobileToggle.Backdrop.UIStroke, "Color", "Foregrounds.Dark")
@@ -4305,6 +4418,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				mainWindow.Visible = true
 				EliteDrag.Visible = true
 				EliteUIInstance.MobileToggle.Visible = UserInputService.TouchEnabled
+					--and not UserInputService.KeyboardEnabled
 
 				local main = mainWindow["New Loading Screen"]
 				local shadows = main.shadows
@@ -4447,6 +4561,8 @@ function EliteUI:CreateWindow(WindowSettings)
 				Tween(playerIcon, { BackgroundTransparency = 1 }, nil, Tween.Info("Quint", "InOut", 0.2))
 				task.wait(1.1 - 0.08)
 				Tween(main, { BackgroundTransparency = 1 }, nil, Tween.Info("Quint", "InOut", 0.2))
+				-- like this cus uhh tween method dont got all the properties
+				--[[if not loadingScreenLogoChanged then
 				TweenService:Create(mainWindow["Loading Screen"].Frame.ImageLabel, TweenInfo.new(1.7, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 2, false, 0.2), {Rotation = 450}):Play()
 			end
 
@@ -4482,6 +4598,9 @@ function EliteUI:CreateWindow(WindowSettings)
 			makeDraggable(EliteDrag.Interact, mainWindow, EliteDrag, true, nil, EliteDrag)
 		end
 
+		-------------------------------------------------------------------------
+		-- [WINDOW RESIZE SYSTEM] - Windows-style edge/corner drag resizing
+		-------------------------------------------------------------------------
 		do
 			local resizeHandles = {}
 			local resizing = false
@@ -4490,6 +4609,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			local startSize = nil
 			local startPos = nil
 
+			-- Create invisible resize handle frames parented to the ScreenGui
 			local function MakeResizeHandle(name, isCorner)
 				local h = Instance.new("Frame")
 				h.Name = "Resize_" .. name
@@ -4497,6 +4617,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				h.ZIndex = 200
 				h.Parent = EliteUIInstance
 
+				-- Hover highlight for feedback
 				h.InputBegan:Connect(function(input)
 					if input.UserInputType == Enum.UserInputType.MouseMovement then
 						h.BackgroundTransparency = 0.85
@@ -4513,15 +4634,18 @@ function EliteUI:CreateWindow(WindowSettings)
 				return h
 			end
 
+			-- Edge handles
 			resizeHandles.right  = MakeResizeHandle("Right", false)
 			resizeHandles.bottom = MakeResizeHandle("Bottom", false)
 			resizeHandles.left   = MakeResizeHandle("Left", false)
 			resizeHandles.top    = MakeResizeHandle("Top", false)
+			-- Corner handles
 			resizeHandles.br = MakeResizeHandle("BottomRight", true)
 			resizeHandles.bl = MakeResizeHandle("BottomLeft", true)
 			resizeHandles.tr = MakeResizeHandle("TopRight", true)
 			resizeHandles.tl = MakeResizeHandle("TopLeft", true)
 
+			-- Corner grip indicators on all 4 corners (diagonal dot pattern)
 			do
 				local cornerConfigs = {
 					{ name = "BR", anchor = Vector2.new(1, 1), pos = UDim2.new(1, -3, 1, -3), dots = {
@@ -4604,6 +4728,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				resizeHandles.tl.Position = UDim2.fromOffset(pos.X - HP, pos.Y - HP)
 			end
 
+			-- Update handle positions only when window moves or resizes (not every frame)
 			local function hookResizeHandleUpdates()
 				local function onChanged(prop)
 					if prop == "Position" or prop == "Size" or prop == "AbsolutePosition" or prop == "AbsoluteSize" then
@@ -4616,6 +4741,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			end
 			hookResizeHandleUpdates()
 
+			-- Connect each handle to begin resize
 			local function connectResizeHandle(handle, rType)
 				handle.InputBegan:Connect(function(input)
 					if input.UserInputType == Enum.UserInputType.MouseButton1
@@ -4631,12 +4757,14 @@ function EliteUI:CreateWindow(WindowSettings)
 								resizing = false
 								Resizing = false
 								resizeType = nil
+								-- Update the drag bar position
 								if EliteDrag then
 									EliteDrag.Position = UDim2.new(
 										0.5, 0, 0,
 										mainWindow.Position.Y.Offset + mainWindow.Size.Y.Offset + 10
 									)
 								end
+								-- Store for unmaximize
 								EliteUI.Window.CurrentSize = mainWindow.Size
 							end
 						end)
@@ -4653,6 +4781,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			connectResizeHandle(resizeHandles.tr, "tr")
 			connectResizeHandle(resizeHandles.tl, "tl")
 
+			-- Process resize movement
 			table.insert(connections, UserInputService.InputChanged:Connect(function(input)
 				if not resizing then return end
 				if input.UserInputType ~= Enum.UserInputType.MouseMovement
@@ -4665,12 +4794,15 @@ function EliteUI:CreateWindow(WindowSettings)
 				local newY = startPos.Y
 				local rt = resizeType
 
+				-- Right edge
 				if rt == "right" or rt == "br" or rt == "tr" then
 					newW = math.max(RESIZE_MIN_W, startSize.X + delta.X)
 				end
+				-- Bottom edge
 				if rt == "bottom" or rt == "br" or rt == "bl" then
 					newH = math.max(RESIZE_MIN_H, startSize.Y + delta.Y)
 				end
+				-- Left edge
 				if rt == "left" or rt == "bl" or rt == "tl" then
 					local proposed = startSize.X - delta.X
 					if proposed >= RESIZE_MIN_W then
@@ -4681,6 +4813,7 @@ function EliteUI:CreateWindow(WindowSettings)
 						newX = startPos.X + (startSize.X - RESIZE_MIN_W)
 					end
 				end
+				-- Top edge
 				if rt == "top" or rt == "tr" or rt == "tl" then
 					local proposed = startSize.Y - delta.Y
 					if proposed >= RESIZE_MIN_H then
@@ -4700,6 +4833,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				mainWindow.Size = UDim2.fromOffset(newW, newH)
 				mainWindow.Position = UDim2.fromOffset(newX, newY)
 
+				-- Keep drag bar in sync
 				if EliteDrag then
 					EliteDrag.Position = UDim2.new(
 						0.5, 0, 0, newY + newH + 10
@@ -4707,13 +4841,18 @@ function EliteUI:CreateWindow(WindowSettings)
 				end
 			end))
 
+			-- Cleanup handles on destroy
 			EliteUIInstance.Destroying:Connect(function()
 				for _, h in pairs(resizeHandles) do
 					pcall(function() h:Destroy() end)
 				end
 			end)
 		end
+		-------------------------------------------------------------------------
+		-- [END WINDOW RESIZE SYSTEM]
+		-------------------------------------------------------------------------
 
+		--if not WindowSettings.LoadingEnabled then task.wait(.15) end
 	end
 
 	--// ENDSUBSECTION
@@ -4724,18 +4863,18 @@ function EliteUI:CreateWindow(WindowSettings)
 		Name = "Header",
    		Content = "Description",
     	Type = 1,
-    	Actions = {
+    	Actions = { 
         	Primary = {
             	Name = "Okay!",
             	Icon = IconProvider:GetIcon("check", "Material"),
             	Callback = function()
 
             	end
-        	},
+        	}, 
         	{
             	Name = "Cancel",
             	Callback = function()
-
+					
             	end
         	},
     	}
@@ -4745,9 +4884,9 @@ function EliteUI:CreateWindow(WindowSettings)
         	{
             	PlaceholderText = ""
             	...from input
-
+            	
             	Callback = function(Text)
-
+					
             	end
         	},
     	}
@@ -4778,6 +4917,7 @@ function EliteUI:CreateWindow(WindowSettings)
 		end)
 		Modal.Instance.Size = UDim2.fromOffset(400, Modal.Instance.Holder and Modal.Instance.Holder.AbsoluteSize.Y)
 
+		-- Theme Binding
 		do
 			ThemeMethods.bindTheme(Modal.Instance, "BackgroundColor3", "Miscellaneous.LighterShadow")
 			ThemeMethods.bindTheme(Modal.Instance.UIStroke, "Color", "Foregrounds.Dark")
@@ -4820,15 +4960,20 @@ function EliteUI:CreateWindow(WindowSettings)
 		if Modal.Values.Type == 1 then
 			for Key, Action in pairs(Modal.Values.Actions) do
 				local ActionButton: TextButton = nil
+				-- Always clone Primary template — it has Accent/UIStroke.Accent children
+				-- Both buttons are visually identical, just different callbacks
 				ActionButton = mainWindow.ModalOverlay.Template.Holder.Actions.Primary:Clone()
 
+				-- Both buttons get identical theming and behavior
 				ThemeMethods.bindTheme(ActionButton.Backdrop, "BackgroundColor3", "Backgrounds.Groupbox")
 				ThemeMethods.bindTheme(ActionButton.Header.Icon, "ImageColor3", "Foregrounds.Light")
 				ThemeMethods.bindTheme(ActionButton.Header.Header, "TextColor3", "Foregrounds.Light")
 				pcall(function()
+					-- Bind stroke to accent color so border matches hover accent
 					ThemeMethods.bindTheme(ActionButton.Backdrop.Accent, "Color", "Accents.Main")
 					ThemeMethods.bindTheme(ActionButton.Backdrop.UIStroke, "Color", "Accents.Main")
 					ThemeMethods.bindTheme(ActionButton.Backdrop.UIStroke.Accent, "Color", "Accents.Main")
+					-- Start with accent off — only shows on hover
 					ActionButton.Backdrop.Accent.Enabled = false
 					ActionButton.Backdrop.UIStroke.Accent.Enabled = false
 					ActionButton.Backdrop.BackgroundTransparency = 0
@@ -4844,6 +4989,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				ActionButton.Header.Icon.Visible = not String.IsEmptyOrNull(Action.Icon)
 				ActionButton.Header.Header.Text = Action.Name
 
+				-- Make sure all layers can receive mouse events
 				pcall(function() ActionButton.Active = true end)
 				pcall(function() ActionButton.Backdrop.Active = true end)
 				pcall(function() ActionButton.Interactable = true end)
@@ -4875,6 +5021,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					end)
 				end
 
+				-- Connect hover on both button and backdrop to cover all cases
 				ActionButton.MouseEnter:Connect(onHover)
 				ActionButton.MouseLeave:Connect(onLeave)
 				pcall(function()
@@ -4988,6 +5135,7 @@ function EliteUI:CreateWindow(WindowSettings)
 		end
 
 		Hide(Modal.Instance)
+		--task.wait()
 		Tween(Modal.Instance.UIScale, { Scale = 1 })
 		Unhide(Modal.Instance)
 		task.wait(0.1)
@@ -4995,6 +5143,7 @@ function EliteUI:CreateWindow(WindowSettings)
 		Tween(mainWindow.ModalOverlay, { BackgroundTransparency = 0.2, ImageTransparency = 0.1 })
 
 		Modal.Instance.Parent = mainWindow.ModalOverlay
+		--return Modal
 	end
 
 	local prebuiltTabSection = nil
@@ -5115,6 +5264,8 @@ function EliteUI:CreateWindow(WindowSettings)
 			end
 		end)
 
+
+		-- Backdrop image
 		if TabSettings.Backdrop then
 			if TabSettings.Backdrop == 0 then
 				Tab.Instances.Page.ImageBackdrop.Image = "https://www.roblox.com/asset-thumbnail/image?assetId="
@@ -5129,10 +5280,12 @@ function EliteUI:CreateWindow(WindowSettings)
 			Tab.Instances.Page.ImageBackdrop.Image = "rbxassetid://78881404248017"
 		end
 
+		-- Player welcome
 		Tab.Instances.Page.playerDisplay.Text = `Welcome, {Player.DisplayName}`
 		Tab.Instances.Page.Thumbnail.ImageLabel.Image =
 			Players:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
 
+		-- Clock + greeting (update once per second, not every frame)
 		task.spawn(function()
 			while task.wait(1) do
 				pcall(function()
@@ -5156,6 +5309,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			end
 		end)
 
+		-- Hover effects for all panels
 		for _, column in pairs(Tab.Instances.Page.Holder:GetChildren()) do
 			if column.ClassName ~= "Frame" then continue end
 			for _, button in pairs(column:GetChildren()) do
@@ -5172,6 +5326,7 @@ function EliteUI:CreateWindow(WindowSettings)
 		end
 
 		-- ═══════════════════════════════════════════════════════
+		-- DISCORD SECTION (kept)
 		-- ═══════════════════════════════════════════════════════
 		Tab.Instances.Page.Holder.Left.Discord.Interact.MouseButton1Click:Connect(function()
 			setclipboard(tostring("https://discord.gg/" .. TabSettings.DiscordInvite))
@@ -5195,6 +5350,7 @@ function EliteUI:CreateWindow(WindowSettings)
 		end)
 
 		-- ═══════════════════════════════════════════════════════
+		-- EXECUTOR SECTION (kept)
 		-- ═══════════════════════════════════════════════════════
 		table.insert(TabSettings.UnsupportedExecutors, "Roblox Studio")
 		Tab.Instances.Page.Holder.Center.Executor.Header.Text = executorname
@@ -5206,14 +5362,17 @@ function EliteUI:CreateWindow(WindowSettings)
 		end
 
 		-- ═══════════════════════════════════════════════════════
+		-- HIDE FLUFF PANELS (Server, Friends, Changelog)
 		-- ═══════════════════════════════════════════════════════
 		pcall(function() Tab.Instances.Page.Holder.Left.Server.Visible = false end)
 		pcall(function() Tab.Instances.Page.Holder.Right.Friends.Visible = false end)
 		pcall(function() Tab.Instances.Page.Holder.Center.Changelog.Visible = false end)
 
 		-- ═══════════════════════════════════════════════════════
+		-- LEADERSTATS DISPLAY (main dashboard feature)
 		-- ═══════════════════════════════════════════════════════
 		do
+			-- Create a large stats panel in the Center column (below Executor)
 			local statsPanel = Instance.new("Frame")
 			statsPanel.Name = "Leaderstats"
 			statsPanel.Size = UDim2.new(1, 0, 0, 0)
@@ -5227,6 +5386,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			statsPanelCorner.CornerRadius = UDim.new(0, 8)
 			statsPanelCorner.Parent = statsPanel
 
+			-- Drop shadow
 			local statsShadow = Instance.new("ImageLabel")
 			statsShadow.Name = "DropShadow"
 			statsShadow.Size = UDim2.new(1, 6, 1, 6)
@@ -5240,6 +5400,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			statsShadow.ZIndex = -1
 			statsShadow.Parent = statsPanel
 
+			-- Hover overlay (match other panels)
 			pcall(function()
 				local hoverOverlay = Instance.new("Frame")
 				hoverOverlay.Name = "Hover"
@@ -5254,6 +5415,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				hoverCorner.Parent = hoverOverlay
 			end)
 
+			-- Header row
 			local headerFrame = Instance.new("Frame")
 			headerFrame.Name = "HeaderRow"
 			headerFrame.Size = UDim2.new(1, 0, 0, 32)
@@ -5281,6 +5443,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			statsHeader.TextXAlignment = Enum.TextXAlignment.Left
 			statsHeader.Parent = headerFrame
 
+			-- Separator line under header
 			local sep = Instance.new("Frame")
 			sep.Name = "Separator"
 			sep.Size = UDim2.new(1, -20, 0, 1)
@@ -5291,6 +5454,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			sep.Parent = headerFrame
 			ThemeMethods.bindTheme(sep, "BackgroundColor3", "Foregrounds.Dark")
 
+			-- Stats container with grid layout
 			local statsFrame = Instance.new("Frame")
 			statsFrame.Name = "StatsGrid"
 			statsFrame.Size = UDim2.new(1, -16, 0, 0)
@@ -5305,6 +5469,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			statsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 			statsLayout.Parent = statsFrame
 
+			-- Bottom padding
 			local bottomPad = Instance.new("Frame")
 			bottomPad.Name = "BottomPad"
 			bottomPad.Size = UDim2.new(1, 0, 0, 12)
@@ -5312,6 +5477,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			bottomPad.LayoutOrder = 999
 			bottomPad.Parent = statsPanel
 
+			-- Known stat icons (Lucide icon names)
 			local statIconMap = {
 				coins = "coins", gold = "coins", money = "coins", cash = "coins",
 				credits = "credit-card", gems = "gem", diamond = "gem", diamonds = "gem",
@@ -5339,6 +5505,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				entryCorner.CornerRadius = UDim.new(0, 6)
 				entryCorner.Parent = entry
 
+				-- Accent bar on left edge
 				local accentBar = Instance.new("Frame")
 				accentBar.Name = "AccentBar"
 				accentBar.Size = UDim2.new(0, 3, 1, -8)
@@ -5351,6 +5518,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				accentCorner.Parent = accentBar
 				ThemeMethods.bindTheme(accentBar, "BackgroundColor3", "Foregrounds.Active")
 
+				-- Stat icon
 				local iconLabel = Instance.new("ImageLabel")
 				iconLabel.Name = "StatIcon"
 				iconLabel.Size = UDim2.fromOffset(16, 16)
@@ -5362,6 +5530,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				setIcon(iconLabel, iconName)
 				ThemeMethods.bindTheme(iconLabel, "ImageColor3", "Foregrounds.Medium")
 
+				-- Stat name
 				local nameLabel = Instance.new("TextLabel")
 				nameLabel.Name = "StatName"
 				nameLabel.Size = UDim2.new(1, -36, 0, 14)
@@ -5376,6 +5545,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				nameLabel.Parent = entry
 				ThemeMethods.bindTheme(nameLabel, "TextColor3", "Foregrounds.Medium")
 
+				-- Stat value (large)
 				local valueLabel = Instance.new("TextLabel")
 				valueLabel.Name = "StatValue"
 				valueLabel.Size = UDim2.new(1, -16, 0, 22)
@@ -5395,6 +5565,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				return entry
 			end
 
+			-- Format large numbers
 			local function formatNumber(n)
 				if type(n) ~= "number" then return tostring(n) end
 				if n >= 1e9 then
@@ -5413,6 +5584,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				end
 			end
 
+			-- Build stats from leaderstats
 			local function buildLeaderstats()
 				local leaderstats = Player:FindFirstChild("leaderstats")
 				if not leaderstats then return end
@@ -5425,6 +5597,7 @@ function EliteUI:CreateWindow(WindowSettings)
 						local display = (type(val) == "number") and formatNumber(val) or tostring(val)
 						createStatEntry(stat.Name, display, order)
 
+						-- Live update
 						local conn = stat.Changed:Connect(function(newVal)
 							if statLabels[stat.Name] then
 								local d = (type(newVal) == "number") and formatNumber(newVal) or tostring(newVal)
@@ -5448,6 +5621,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				end
 			end
 
+			-- Wait for leaderstats then build
 			task.spawn(function()
 				local leaderstats = Player:FindFirstChild("leaderstats")
 				if not leaderstats then
@@ -5457,6 +5631,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					task.wait(0.5)
 					buildLeaderstats()
 
+					-- Watch for new stats added dynamically
 					local conn = leaderstats.ChildAdded:Connect(function(child)
 						task.wait(0.1)
 						if child:IsA("ValueBase") then
@@ -5479,14 +5654,17 @@ function EliteUI:CreateWindow(WindowSettings)
 				end
 			end)
 
+			-- Theme bindings for panel
 			ThemeMethods.bindTheme(statsPanel, "BackgroundColor3", "Backgrounds.Light")
 			ThemeMethods.bindTheme(statsShadow, "ImageColor3", "Miscellaneous.Shadow")
 			ThemeMethods.bindTheme(statsHeader, "TextColor3", "Foregrounds.Light")
 			ThemeMethods.bindTheme(statsIcon, "ImageColor3", "Foregrounds.Active")
 		end
 		-- ═══════════════════════════════════════════════════════
+		-- END LEADERSTATS
 		-- ═══════════════════════════════════════════════════════
 
+		-- Tab button theme bindings
 		ThemeMethods.bindTheme(Tab.Instances.Button, "BackgroundColor3", "Backgrounds.Dark")
 		ThemeMethods.bindTheme(Tab.Instances.Button.Accent, "Color", "Accents.Main")
 		ThemeMethods.bindTheme(Tab.Instances.Button.Icon.AccentBrighter, "Color", "Accents.Brighter")
@@ -5550,6 +5728,7 @@ function EliteUI:CreateWindow(WindowSettings)
 		TabSection.Instance.Name = "TAB_SECTION_" .. Name
 		TabSection.Instance.Header.Visible = Visible
 
+		-- Theme Binding
 		do
 			ThemeMethods.bindTheme(TabSection.Instance.Header, "TextColor3", "Foregrounds.Medium")
 		end
@@ -5572,14 +5751,15 @@ function EliteUI:CreateWindow(WindowSettings)
 		end
 
 		function TabSection:CreateCustomTab(TabSettings, TabIndex)
+			-- Tab Settings Table
 			--[[
-
+			
 			TabSettings = {
 				Name = string,
 				Columns = number, (ranged from 1-3)
 				Icon = number/string, **
 			}
-
+			
 			]]
 
 			TabSettings.Icon = TabSettings.Icon or ""
@@ -5646,10 +5826,12 @@ function EliteUI:CreateWindow(WindowSettings)
 			end
 
 			if EliteUI.Window.CurrentTab == nil then
+				--task.spawn(function()
 				repeat
 					task.wait()
 				until Tab.Instances.Page.Parent == tabs
 				Activate()
+				--end)
 			end
 
 			Tab.Instances.Button.Interact["MouseButton1Click"]:Connect(Activate)
@@ -5732,14 +5914,15 @@ function EliteUI:CreateWindow(WindowSettings)
 		end
 
 		function TabSection:CreateTab(TabSettings, TabIndex)
+			-- Tab Settings Table
 			--[[
-
+			
 			TabSettings = {
 				Name = string,
 				Columns = number, (ranged from 1-3)
 				Icon = number/string, **
 			}
-
+			
 			]]
 
 			TabSettings.Icon = TabSettings.Icon or ""
@@ -5806,10 +5989,12 @@ function EliteUI:CreateWindow(WindowSettings)
 			end
 
 			if EliteUI.Window.CurrentTab == nil then
+				--task.spawn(function()
 				repeat
 					task.wait()
 				until Tab.Instances.Page.Parent == tabs
 				Activate()
+				--end)
 			end
 
 			Tab.Instances.Button.Interact["MouseButton1Click"]:Connect(Activate)
@@ -5940,6 +6125,8 @@ function EliteUI:CreateWindow(WindowSettings)
 				Tab = nil
 			end
 
+			-- deprecated as its kinda useless, groupbox seperate ur stuff already and dividers are in groupboxes. like rlly, these being in the actual tabs are useless
+			--[[function Tab:CreateDivider(Column) -- will be changed in next update to be other items where its linked back to the library
 				local Divider = {}
 
 				Divider.Instance = tabs["Tab_TEMPLATE"].ScrollingCollumnTemplate.Divider:Clone()
@@ -6026,6 +6213,7 @@ function EliteUI:CreateWindow(WindowSettings)
 
 				end)
 
+				-- Now removed due to autosizing actually working
 				--[[
 				if GroupboxSettings.Style == 2 then
 					Groupbox.Instance["PART_Content"]:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
@@ -6086,6 +6274,7 @@ function EliteUI:CreateWindow(WindowSettings)
 
 				--// SUBSECTION : Legacy User Methods
 
+				--[=[
 
 				function Groupbox:CreatePrimaryButton(ElementSettings) -- these will be merged in the next update where we allow style changing.
 
@@ -6094,10 +6283,11 @@ function EliteUI:CreateWindow(WindowSettings)
 						Name = string,
 						Icon = number, **
 						ImageSource = string, **
-
+						
 						Callback = function(nil),
 					}
 					-]]
+					
 
 					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
 
@@ -6168,7 +6358,7 @@ function EliteUI:CreateWindow(WindowSettings)
 							Element.Instance["PART_Backdrop"].Header.Text = "Callback Error"
 							warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
 							print(tostring(Response))
-							task.wait(0.5)
+							wait(0.5)
 							Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
 						end
 					end)
@@ -6255,7 +6445,7 @@ function EliteUI:CreateWindow(WindowSettings)
 							Element.Instance["PART_Backdrop"].Header.Text = "Callback Error"
 							warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
 							print(tostring(Response))
-							task.wait(0.5)
+							wait(0.5)
 							Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
 						end
 					end)
@@ -6273,9 +6463,10 @@ function EliteUI:CreateWindow(WindowSettings)
 						ImageSource = string, **
 						InitialCallback = bool, **
 						CurrentValue = bool, **
-
+						
 						Callback = function(bool),
 					}
+					--]]
 
 					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
 					ElementSettings.InitialCallback = ElementSettings.InitialCallback or true
@@ -6309,6 +6500,7 @@ function EliteUI:CreateWindow(WindowSettings)
 						Element.Values.CurrentValue = bool
 					end
 
+					--starting
 					do
 						Set(Element.Values.CurrentValue)
 						if ElementSettings.InitialCallback then
@@ -6320,7 +6512,7 @@ function EliteUI:CreateWindow(WindowSettings)
 								Element.Instance.Header.Text = "Callback Error"
 								warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
 								print(tostring(Response))
-								task.wait(0.5)
+								wait(0.5)
 								Element.Instance.Header.Text = ElementSettings.Name
 							end
 						end
@@ -6348,7 +6540,7 @@ function EliteUI:CreateWindow(WindowSettings)
 							Element.Instance.Header.Text = "Callback Error"
 							warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
 							print(tostring(Response))
-							task.wait(0.5)
+							wait(0.5)
 							Element.Instance.Header.Text = ElementSettings.Name
 						end
 					end)
@@ -6394,7 +6586,7 @@ function EliteUI:CreateWindow(WindowSettings)
 						ImageSource = string, **
 						InitialCallback = bool, **
 						CurrentValue = bool, **
-
+						
 						Callback = function(bool),
 					}
 					]]
@@ -6441,6 +6633,7 @@ function EliteUI:CreateWindow(WindowSettings)
 						Element.Values.CurrentValue = bool
 					end
 
+					--starting
 					do
 						Set(Element.Values.CurrentValue)
 						if ElementSettings.InitialCallback then
@@ -6452,7 +6645,7 @@ function EliteUI:CreateWindow(WindowSettings)
 								Element.Instance.Header.Text = "Callback Error"
 								warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
 								print(tostring(Response))
-								task.wait(0.5)
+								wait(0.5)
 								Element.Instance.Header.Text = ElementSettings.Name
 							end
 						end
@@ -6470,7 +6663,7 @@ function EliteUI:CreateWindow(WindowSettings)
 							Element.Instance.Header.Text = "Callback Error"
 							warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
 							print(tostring(Response))
-							task.wait(0.5)
+							wait(0.5)
 							Element.Instance.Header.Text = ElementSettings.Name
 						end
 					end)
@@ -6507,8 +6700,10 @@ function EliteUI:CreateWindow(WindowSettings)
 					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
 				end
 
-				function Groupbox:CreateDropdown(ElementSettings)
 
+				-- element creation logic
+				function Groupbox:CreateDropdown(ElementSettings)
+					
 					-[[
 					ElementSettings = {
 						Name = string,
@@ -6518,7 +6713,7 @@ function EliteUI:CreateWindow(WindowSettings)
 						CurrentOption = table/string, {string ...} **
 						MultipleOptions = bool, **
 						Special = number, ** -- 0/nil for none, 1 for Player, 2 for Teams, more hopefully coming soon
-
+						
 						Callback = function(table)
 					}
 					]]
@@ -6541,9 +6736,11 @@ function EliteUI:CreateWindow(WindowSettings)
 					Element.Instances.Element.Name = "DROPDOWN_" .. ElementSettings.Name
 					Element.Instances.Element.Header.Text = ElementSettings.Name
 
+
 					Element.Instances.Popup = mainWindow["Popup Overlay"].Dropdown_TEMPLATE:Clone()
 					Element.Instances.Popup.Parent = mainWindow["Popup Overlay"]
 					Element.Instances.Popup.Header.Text = ElementSettings.Name
+
 
 					--// Interaction System \\--
 					local _dropdownOutsideConn = nil
@@ -6572,6 +6769,7 @@ function EliteUI:CreateWindow(WindowSettings)
 								Option.Icon.Accent.Enabled = false
 							end
 						end
+
 
 						Tween(Element.Instances.Popup.Content[name], {BackgroundTransparency = 0.8})
 						Tween(Element.Instances.Popup.Content[name].Header, {TextColor3 = Color3.fromRGB(255,255,255)})
@@ -6626,6 +6824,7 @@ function EliteUI:CreateWindow(WindowSettings)
 									ActivateColorSingle(v)
 								end
 
+
 								CB(Selected, function()
 									if ElementSettings.MultipleOptions then
 										if not ElementSettings.CurrentOption and type(ElementSettings.CurrentOption) == "table" then
@@ -6634,6 +6833,7 @@ function EliteUI:CreateWindow(WindowSettings)
 									end
 								end)
 							end)
+
 
 							Option.Visible = true
 							Option.Parent = Element.Instances.Popup.Content
@@ -6654,7 +6854,7 @@ function EliteUI:CreateWindow(WindowSettings)
 								else
 									Tween(Option.Header, {TextColor3 = Color3.fromRGB(100,100,100)})
 								end
-							end)
+							end)	
 
 						end
 					end
@@ -6678,7 +6878,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					end
 					if ind == 1 then Selected = ElementSettings.CurrentOption[1] else Selected = ElementSettings.CurrentOption end
 					CB(Selected)
-					if type(Selected) == "string" then
+					if type(Selected) == "string" then 
 						Tween(Element.Instances.Popup.Content[Selected], {BackgroundTransparency = 0.8})
 						Tween(Element.Instances.Popup.Content[Selected].Header, {TextColor3 = Color3.fromRGB(255,255,255)})
 						Element.Instances.Popup.Content[Selected].Header.Accent.Enabled = true
@@ -6707,20 +6907,22 @@ function EliteUI:CreateWindow(WindowSettings)
 				end
 
 				function Groupbox:CreateBind(ElementSettings) -- will be merged with toggles and labels soon
-
+	
 					--[[
 					ElementSettings = {
 						Name = string,
 						Icon = number, **
 						ImageSource = string, **
 						HoldToInteract = bool, **
-						CurrentValue = string,
+						CurrentValue = string, 
 						SyncToggleState = bool, ** -- required to be made on toggle to use, coming soon
-
+						
+						-- if creating on a parent toggle, do not create the callback here. create it in the parent toggle, it will sync automatically
 						Callback = function(bool), -- Returns bool whether the bind is active or not. If HoldToInteract is true, it is recommended to put your script in a while boolean do loop
 						ChangedCallback = function(string), ** -- Returns the new keybind as a string (See the documentation list for all keybinds to string)
 					}
 					]]
+					
 
 					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
 					ElementSettings.HoldToInteract = ElementSettings.HoldToInteract or false
@@ -6780,7 +6982,7 @@ function EliteUI:CreateWindow(WindowSettings)
 										Element.Instance.Header.Text = "Callback Error"
 										warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
 										print(tostring(Response))
-										task.wait(0.5)
+										wait(0.5)
 										Element.Instance.Header.Text = ElementSettings.Name
 									end
 									Element.Instance.Bind:ReleaseFocus()
@@ -6798,7 +7000,7 @@ function EliteUI:CreateWindow(WindowSettings)
 										Element.Instance.Header.Text = "Callback Error"
 										warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
 										print(tostring(Response))
-										task.wait(0.5)
+										wait(0.5)
 										Element.Instance.Header.Text = ElementSettings.Name
 									end
 								elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
@@ -6813,19 +7015,19 @@ function EliteUI:CreateWindow(WindowSettings)
 										Element.Instance.Header.Text = "Callback Error"
 										warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
 										print(tostring(Response))
-										task.wait(0.5)
+										wait(0.5)
 										Element.Instance.Header.Text = ElementSettings.Name
 									end
 								end
 							end
 
-						elseif Element.Values.CurrentValue ~= nil and not processed then
+						elseif Element.Values.CurrentValue ~= nil and not processed then 
 
 							if Element.Values.CurrentValue == "MB1" then
 								if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
 									return
 								end
-							elseif Element.Values.CurrentValue == "MB2" then
+							elseif Element.Values.CurrentValue == "MB2" then	
 								if input.UserInputType ~= Enum.UserInputType.MouseButton2 then
 									return
 								end
@@ -6854,11 +7056,11 @@ function EliteUI:CreateWindow(WindowSettings)
 									Element.Instance.Header.Text = "Callback Error"
 									warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
 									print(tostring(Response))
-									task.wait(0.5)
+									wait(0.5)
 									Element.Instance.Header.Text = ElementSettings.Name
 								end
 							else
-								task.wait(0.1)
+								wait(0.1)
 								if Held then
 									local Loop; Loop = RunService.Stepped:Connect(function()
 										if not Held then
@@ -6870,7 +7072,7 @@ function EliteUI:CreateWindow(WindowSettings)
 												Element.Instance.Header.Text = "Callback Error"
 												warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
 												print(tostring(Response))
-												task.wait(0.5)
+												wait(0.5)
 												Element.Instance.Header.Text = ElementSettings.Name
 											end
 											Loop:Disconnect()
@@ -6883,11 +7085,11 @@ function EliteUI:CreateWindow(WindowSettings)
 												Element.Instance.Header.Text = "Callback Error"
 												warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
 												print(tostring(Response))
-												task.wait(0.5)
+												wait(0.5)
 												Element.Instance.Header.Text = ElementSettings.Name
 											end
 										end
-									end)
+									end)	
 								end
 							end
 						end
@@ -6926,6 +7128,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = Element
 					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
 				end
+				
 
 				]=]
 
@@ -6934,9 +7137,9 @@ function EliteUI:CreateWindow(WindowSettings)
 					ElementSettings = {
 						Name = string,
 						Icon = number, **
-
+						
 						Style = number, **
-
+						
 						Callback = function(nil),
 					}
 					]]
@@ -7106,7 +7309,7 @@ function EliteUI:CreateWindow(WindowSettings)
 											Icon = 129398364168201,
 										})
 									end
-									task.wait(0.5)
+									wait(0.5)
 									ElementInstance["PART_Backdrop"].Header.Header.Text = ElementSettings.Name
 								end
 							end)
@@ -7200,9 +7403,9 @@ function EliteUI:CreateWindow(WindowSettings)
 
 						CurrentValue = bool,
 						CheckboxIcon = number, **
-
+						
 						Style = number, **
-
+						
 						Callback = function(bool),
 					}
 					]]
@@ -7337,7 +7540,7 @@ function EliteUI:CreateWindow(WindowSettings)
 												Icon = 129398364168201,
 											})
 										end
-										task.wait(0.5)
+										wait(0.5)
 										ElementInstance.Header.Text = ElementSettings.Name
 									end
 								end
@@ -7373,7 +7576,7 @@ function EliteUI:CreateWindow(WindowSettings)
 												Icon = 129398364168201,
 											})
 										end
-										task.wait(0.5)
+										wait(0.5)
 										ElementInstance.Header.Text = ElementSettings.Name
 									end
 								end)
@@ -7423,7 +7626,7 @@ function EliteUI:CreateWindow(WindowSettings)
 												Icon = 129398364168201,
 											})
 										end
-										task.wait(0.5)
+										wait(0.5)
 										ElementInstance.Header.Text = ElementSettings.Name
 									end
 								end
@@ -7465,7 +7668,7 @@ function EliteUI:CreateWindow(WindowSettings)
 												Icon = 129398364168201,
 											})
 										end
-										task.wait(0.5)
+										wait(0.5)
 										ElementInstance.Header.Text = ElementSettings.Name
 									end
 								end)
@@ -7526,7 +7729,7 @@ function EliteUI:CreateWindow(WindowSettings)
 										Icon = 129398364168201,
 									})
 								end
-								task.wait(0.5)
+								wait(0.5)
 								for _, ElementInstance in pairs(Instances) do
 									ElementInstance.Header.Text = ElementSettings.Name
 								end
@@ -7700,17 +7903,21 @@ function EliteUI:CreateWindow(WindowSettings)
 					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements["Divider_" .. Divider.ID]
 				end
 
+				-- uhm so i crashed out here cus the textbox kept making it crash
+				-- SOOO, i got gpt to help :skull:
+				-- pls dont attack me :sob: i spent five hours tryna make it work and i js couldnt take it anymore
+				-- it only helped with logic-ing the steps, i still coded it muaself hehe (but thats why its so damn messy)
 				function Groupbox:CreateSlider(ElementSettings, Index)
 					--[[
 					ElementSettings = {
 						Name = string,
 						Icon = number, **
-
+						
 						CurrentValue = number, **
-						Range = table{number, number},
+						Range = table{number, number}, 
 						Increment = number, **
 						HideMax = bool, **
-
+						
 						Callback = function(number),
 					}
 					]]
@@ -7788,7 +7995,7 @@ function EliteUI:CreateWindow(WindowSettings)
 											Icon = 129398364168201,
 										})
 									end
-									task.wait(0.5)
+									wait(0.5)
 									Element.Instance.Header.Text = ElementSettings.Name
 								end
 							end
@@ -7907,7 +8114,7 @@ function EliteUI:CreateWindow(WindowSettings)
 													Icon = 129398364168201,
 												})
 											end
-											task.wait(0.5)
+											wait(0.5)
 											Element.Instance.Header.Text = ElementSettings.Name
 										end
 
@@ -7977,6 +8184,7 @@ function EliteUI:CreateWindow(WindowSettings)
 							if sanitized ~= newText then
 								updating = true
 								tb.Text = sanitized
+								--task.wait()
 								tb.CursorPosition = math.clamp(survivorsBeforeCursor + 1, 1, #sanitized + 1)
 								updating = false
 								lastValid = sanitized
@@ -8002,6 +8210,7 @@ function EliteUI:CreateWindow(WindowSettings)
 								num = minv
 								updating = true
 								tb.Text = tostring(num)
+								--task.wait()
 								tb.CursorPosition = #tb.Text + 1
 								updating = false
 								lastValid = tb.Text
@@ -8009,6 +8218,7 @@ function EliteUI:CreateWindow(WindowSettings)
 								num = maxv
 								updating = true
 								tb.Text = tostring(num)
+								--task.wait()
 								tb.CursorPosition = #tb.Text + 1
 								updating = false
 								lastValid = tb.Text
@@ -8026,6 +8236,7 @@ function EliteUI:CreateWindow(WindowSettings)
 								or Element.Instance.Value.input.Text == "0."
 							then
 								Set(Element.Values.CurrentValue)
+								--task.wait()
 								Element.Instance.Value.input:ReleaseFocus()
 							end
 						end)
@@ -8152,7 +8363,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					ElementSettings = {
 						Name = string,
 						Icon = number, **
-
+						
 						CurrentValue = string, **
 						PlaceholderText = string, **
 						RemoveTextAfterFocusLost = bool, **
@@ -8160,7 +8371,7 @@ function EliteUI:CreateWindow(WindowSettings)
 						Enter = bool, **
 						MaxCharacters = number, **
 						RemoveTextOnFocus = bool, **
-
+						
 						Callback = function(string),
 					}
 					]]
@@ -8204,7 +8415,7 @@ function EliteUI:CreateWindow(WindowSettings)
 											Icon = 129398364168201,
 										})
 									end
-									task.wait(0.5)
+									wait(0.5)
 									Element.Instance.Header.Text = ElementSettings.Name
 								end
 							end
@@ -8275,7 +8486,7 @@ function EliteUI:CreateWindow(WindowSettings)
 											Icon = 129398364168201,
 										})
 									end
-									task.wait(0.5)
+									wait(0.5)
 									Element.Instance.Header.Text = ElementSettings.Name
 								end
 							end
@@ -8395,7 +8606,7 @@ function EliteUI:CreateWindow(WindowSettings)
 										Icon = 129398364168201,
 									})
 								end
-								task.wait(0.5)
+								wait(0.5)
 								Element.Instance.Header.Text = ElementSettings.Name
 							end
 
@@ -8537,9 +8748,9 @@ function EliteUI:CreateWindow(WindowSettings)
 						--[[
 						NestedSettings = {
 							HoldToInteract = bool, **
-							CurrentValue = string,
+							CurrentValue = string, 
 							SyncToggleState = bool, **
-
+							
 							Callback = function(bool), ****
 							OnChangedCallback = function(string), **
 						}
@@ -8564,6 +8775,7 @@ function EliteUI:CreateWindow(WindowSettings)
 						}
 
 						task.spawn(function()
+							-- Current Value Validation
 
 							local digits = {
 								[1] = "One",
@@ -8585,6 +8797,7 @@ function EliteUI:CreateWindow(WindowSettings)
 							NestedElement.Values.CurrentValue = NestedElement.Values.CurrentValue:sub(1, 1):upper()
 								.. NestedElement.Values.CurrentValue:sub(2)
 
+							--
 
 							NestedElement.Instance = Element.Instance.ElementContainer.Bind:Clone()
 							NestedElement.Instance.Visible = true
@@ -8596,6 +8809,7 @@ function EliteUI:CreateWindow(WindowSettings)
 							local CheckingForKey = false
 
 							NestedElement.Instance:GetPropertyChangedSignal("Text"):Connect(function()
+								--task.wait()
 
 								if NestedElement.Instance.ContentText == "" then
 									Tween(
@@ -8691,7 +8905,7 @@ function EliteUI:CreateWindow(WindowSettings)
 															Icon = 129398364168201,
 														})
 													end
-													task.wait(0.5)
+													wait(0.5)
 													Parent.Instance.Header.Text = ElementSettings.Name
 												end
 												NestedElement.Instance:ReleaseFocus()
@@ -8726,7 +8940,7 @@ function EliteUI:CreateWindow(WindowSettings)
 															Icon = 129398364168201,
 														})
 													end
-													task.wait(0.5)
+													wait(0.5)
 													Parent.Instance.Header.Text = ElementSettings.Name
 												end
 												NestedElement.Instance:ReleaseFocus()
@@ -8773,7 +8987,7 @@ function EliteUI:CreateWindow(WindowSettings)
 															Icon = 129398364168201,
 														})
 													end
-													task.wait(0.5)
+													wait(0.5)
 													Parent.Instance.Header.Text = ElementSettings.Name
 												end
 											elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
@@ -8799,7 +9013,7 @@ function EliteUI:CreateWindow(WindowSettings)
 															Icon = 129398364168201,
 														})
 													end
-													task.wait(0.5)
+													wait(0.5)
 													Parent.Instance.Header.Text = ElementSettings.Name
 												end
 											end
@@ -8849,7 +9063,7 @@ function EliteUI:CreateWindow(WindowSettings)
 														Icon = 129398364168201,
 													})
 												end
-												task.wait(0.5)
+												wait(0.5)
 												Parent.Instance.Header.Text = ElementSettings.Name
 											end
 										else
@@ -8880,7 +9094,7 @@ function EliteUI:CreateWindow(WindowSettings)
 														Icon = 129398364168201,
 													})
 												end
-												task.wait(0.5)
+												wait(0.5)
 												Parent.Instance.Header.Text = ElementSettings.Name
 											end
 
@@ -8915,7 +9129,7 @@ function EliteUI:CreateWindow(WindowSettings)
 																Icon = 129398364168201,
 															})
 														end
-														task.wait(0.5)
+														wait(0.5)
 														Parent.Instance.Header.Text = ElementSettings.Name
 													end
 												end
@@ -8945,7 +9159,7 @@ function EliteUI:CreateWindow(WindowSettings)
 										Icon = 129398364168201,
 									})
 								end
-								task.wait(0.5)
+								wait(0.5)
 								Parent.Instance.Header.Text = ElementSettings.Name
 							end
 
@@ -9010,7 +9224,7 @@ function EliteUI:CreateWindow(WindowSettings)
 											Icon = 129398364168201,
 										})
 									end
-									task.wait(0.5)
+									wait(0.5)
 									Parent.Instance.Header.Text = ElementSettings.Name
 								end
 
@@ -9032,7 +9246,7 @@ function EliteUI:CreateWindow(WindowSettings)
 						NestedSettings = {
 							CurrentValue = Color3,
 							Transparency = number, **
-
+							
 							Callback = function(Color3, number),
 						}
 						]]
@@ -9177,6 +9391,7 @@ function EliteUI:CreateWindow(WindowSettings)
 								end)
 							end
 
+							-- uhh forget abt doing this myself, i found this part on stackoverflow for some old ahh c# app and ported it to luau
 							local function GammaBlend(fg: Color3, transparency: number, bg: Color3): Color3
 								local function toLinear(channel)
 									return math.pow(channel, 2.2)
@@ -9216,7 +9431,7 @@ function EliteUI:CreateWindow(WindowSettings)
 											Icon = 129398364168201,
 										})
 									end
-									task.wait(0.5)
+									wait(0.5)
 									Parent.Instance.Header.Text = Element.Values.Name
 								end
 							end
@@ -9955,7 +10170,7 @@ function EliteUI:CreateWindow(WindowSettings)
 							CurrentOption = table/string,
 							MultipleOptions = bool,**
 							Special = number (1,2), **
-
+							
 							Callback = function(table),
 						}
 						]]
@@ -10052,6 +10267,7 @@ function EliteUI:CreateWindow(WindowSettings)
 									math.ceil(NestedElement.Instances[1].AbsoluteSize.X),
 									NestedElement.Instances[2].Size.Y.Offset
 								)
+								--task.wait()
 								NestedElement:truncate()
 							end)
 
@@ -10244,7 +10460,7 @@ function EliteUI:CreateWindow(WindowSettings)
 												Icon = 129398364168201,
 											})
 										end
-										task.wait(0.5)
+										wait(0.5)
 										Parent.Instance.Header.Text = ElementSettings.Name
 									end
 								else
@@ -10276,7 +10492,7 @@ function EliteUI:CreateWindow(WindowSettings)
 												Icon = 129398364168201,
 											})
 										end
-										task.wait(0.5)
+										wait(0.5)
 										Parent.Instance.Header.Text = ElementSettings.Name
 									end
 								end
@@ -10284,6 +10500,7 @@ function EliteUI:CreateWindow(WindowSettings)
 
 							local _refreshThemeConns = {}
 							local function Refresh()
+								-- Disconnect old theme connections before destroying options
 								for _, conn in ipairs(_refreshThemeConns) do
 									pcall(function() conn:Disconnect() end)
 								end
@@ -10308,6 +10525,7 @@ function EliteUI:CreateWindow(WindowSettings)
 									end
 								end
 
+								-- ipairs so it actually lines up correctly
 								for _, option in ipairs(NestedElement.Values.Options) do
 									local optioninstance = Resources.Elements.DropdownPopup.List.Option_TEMPLATE:Clone()
 									optioninstance.Parent = NestedElement.Instances[2].List
@@ -10627,7 +10845,9 @@ function EliteUI:CreateWindow(WindowSettings)
 				return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex]
 			end
 
+			--function Tab:CreateTabbox(TabboxSettings) -- coming soon
 
+			--end
 
 			function Tab:BuildThemeGroupbox(Column, Style, ButtonsCentered)
 				if ButtonsCentered == nil then
@@ -10689,6 +10909,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					table.insert(themesArray, v)
 				end
 
+
 				local colorpickers = {}
 				do
 					colorpickers.bg = instance:CreateLabel({
@@ -10714,6 +10935,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					}, "colorpicker_accents")
 				end
 
+				-- backgrounds
 				do
 					do
 						local debounce = false
@@ -10812,6 +11034,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					end
 				end
 
+				-- foregrounds
 				do
 					do
 						local debounce = false
@@ -10929,6 +11152,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					end
 				end
 
+				-- divider
 				do
 					local debounce = false
 					local cp = colorpickers.divider:AddColorPicker({
@@ -10949,6 +11173,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					end)
 				end
 
+				-- shadows
 				do
 					do
 						local debounce = false
@@ -10990,7 +11215,9 @@ function EliteUI:CreateWindow(WindowSettings)
 					end
 				end
 
+				-- accents
 				do
+					-- main
 					do
 						do
 							local debounce = false
@@ -11077,6 +11304,7 @@ function EliteUI:CreateWindow(WindowSettings)
 							end)
 						end
 					end
+					-- brighter
 					do
 						do
 							local debounce = false
@@ -11274,6 +11502,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				themeEvent.Event:Connect(function()
 					for key, theme in pairs(Themes) do
 						if theme == EliteUI.CurrentTheme then
+							--themeDropdown:Set({ CurrentOption = tostring(key) })
 						end
 					end
 				end)
@@ -11870,6 +12099,7 @@ function EliteUI:CreateWindow(WindowSettings)
 							{ TextTransparency = 1 }
 						):Play()
 
+
 						TweenService:Create(
 							newNotification,
 							TweenInfo.new(1, Enum.EasingStyle.Exponential),
@@ -12079,6 +12309,7 @@ function EliteUI:CreateWindow(WindowSettings)
 						debounce = true
 						Unhide(mainWindow)
 						Unhide(EliteDrag)
+						-- Show all sub windows
 						for _, sw in ipairs(EliteUI.SubWindows) do
 							pcall(function() sw.Enabled = true end)
 						end
@@ -12096,6 +12327,7 @@ function EliteUI:CreateWindow(WindowSettings)
 						debounce = true
 						Hide(mainWindow, false, true, EliteUI.WindowKeybind)
 						Hide(EliteDrag, false, false, EliteUI.WindowKeybind)
+						-- Hide all sub windows
 						for _, sw in ipairs(EliteUI.SubWindows) do
 							pcall(function() sw.Enabled = false end)
 						end
@@ -12109,22 +12341,30 @@ function EliteUI:CreateWindow(WindowSettings)
 	end
 	--// ENDSUBSECTION
 
+	-- Hook window state persistence (auto-save on move/resize/theme change)
+	-- and load any saved state (position, size, theme, transparency)
+	-- Hook window state persistence (auto-save on move/resize/theme change)
 	task.spawn(function()
+		-- Wait for loading animation to finish and window to settle
 		local waitTime = WindowSettings.LoadingEnabled and 6 or 0.5
 		task.wait(waitTime)
 		EliteUI:_hookWindowStateListeners()
+		-- Update CurrentSize after loading animation completes
 		if EliteUI.Window then
 			EliteUI.Window.CurrentSize = mainWindow.Size
 		end
+		-- Apply saved/default transparency now that the window is ready
 		pcall(function() transparencyEvent:Fire() end)
 	end)
 
+	-- Return the window
 	return EliteUI.Window
 end
 
 --// SECTION : Config System
 
 function EliteUI.FileSystem:BuildFolderTree(FileSettings)
+	-- Revamp since beta 4 since we are storing stuff within like scripts for both themes and such
 	if isStudio or not isfolder then
 		return "Config system unavailable."
 	end
@@ -12138,6 +12378,7 @@ function EliteUI.FileSystem:BuildFolderTree(FileSettings)
 	end
 	local paths = {}
 	if FileSettings.RootFolder ~= nil then
+		-- has root
 		if FileSettings.ThemesInRoot then
 			paths = {
 				EliteUI.FileSystem.Folder,
@@ -12154,6 +12395,7 @@ function EliteUI.FileSystem:BuildFolderTree(FileSettings)
 			}
 		end
 	else
+		-- no root
 		paths = {
 			EliteUI.FileSystem.Folder,
 			`{EliteUI.FileSystem.Folder}/{FileSettings.ConfigFolder}`,
@@ -12214,6 +12456,7 @@ function EliteUI.FileSystem:SaveConfig(file, path)
 					end
 				end
 
+				-- will add tabbox in future
 			end
 		end
 	end
@@ -12330,6 +12573,7 @@ function EliteUI:SetTheme(newTheme)
 		EliteUI._currentThemeName = newTheme
 		themeToCopy = EliteUI.Themes[themeToCopy]
 	else
+		-- Reverse lookup name
 		for name, theme in pairs(EliteUI.Themes) do
 			if theme == newTheme then
 				EliteUI._currentThemeName = name
@@ -12340,9 +12584,11 @@ function EliteUI:SetTheme(newTheme)
 
 	EliteUI.CurrentTheme = deepCopy(themeToCopy)
 	themeEvent:Fire()
+	-- Apply theme transparency
 	pcall(function() transparencyEvent:Fire() end)
 end
 
+-- Set transparency independent of theme (0-1, nil to reset to theme default)
 function EliteUI:SetTransparency(alpha)
 	if alpha == nil then
 		transparencyOverride = nil
@@ -12377,6 +12623,9 @@ end
 
 --// ENDSECTION
 
+-- ============================================================
+-- WINDOW STATE PERSISTENCE (per-game save/restore)
+-- ============================================================
 do
 	local stateFolder = "ELS_WindowState"
 	local stateFile = stateFolder .. "/place_" .. tostring(game.PlaceId) .. ".json"
@@ -12394,6 +12643,7 @@ do
 		end)
 	end
 
+	-- Read saved state from disk without applying (for early use in CreateWindow)
 	function EliteUI:_readSavedState()
 		if isStudio then return nil end
 		if not isfile or not readfile then return nil end
@@ -12407,6 +12657,7 @@ do
 		return nil
 	end
 
+	-- Save current window state
 	function EliteUI:SaveWindowState()
 		if isStudio then return end
 		if not writefile then return end
@@ -12422,6 +12673,7 @@ do
 
 			local currentThemeName = EliteUI._currentThemeName
 			if not currentThemeName then
+				-- Fallback: reverse lookup by color
 				for name, theme in pairs(Themes) do
 					if EliteUI.CurrentTheme and EliteUI.CurrentTheme.Backgrounds
 						and theme.Backgrounds and theme.Backgrounds.Dark == EliteUI.CurrentTheme.Backgrounds.Dark
@@ -12453,6 +12705,7 @@ do
 		end)
 	end
 
+	-- Load and apply saved window state
 	function EliteUI:LoadWindowState()
 		if isStudio then return nil end
 		if not isfile or not readfile then return nil end
@@ -12475,6 +12728,7 @@ do
 		if not success or not state then return nil end
 		stateLoaded = true
 
+		-- Restore position and size
 		pcall(function()
 			if state.PosX and state.PosY then
 				mainWin.Position = UDim2.fromOffset(state.PosX, state.PosY)
@@ -12487,6 +12741,7 @@ do
 					EliteUI.Window.CurrentSize = mainWin.Size
 				end
 			end
+			-- Update drag bar position
 			if EliteUIInstance and EliteUIInstance:FindFirstChild("Drag") then
 				EliteDrag.Position = UDim2.new(
 					0.5, 0, 0,
@@ -12495,21 +12750,25 @@ do
 			end
 		end)
 
+		-- Restore theme
 		pcall(function()
 			if state.Theme and Themes[state.Theme] then
 				EliteUI:SetTheme(state.Theme)
 			end
 		end)
 
+		-- Restore transparency
 		pcall(function()
 			if state.Transparency ~= nil then
 				transparencyOverride = state.Transparency
 			end
 		end)
 
+
 		return state
 	end
 
+	-- Hook auto-save listeners once the window exists
 	function EliteUI:_hookWindowStateListeners()
 		if stateHooked then return end
 		local mainWin = EliteUI.Window and EliteUI.Window.Instance
@@ -12519,6 +12778,7 @@ do
 		end
 		stateHooked = true
 
+		-- Auto-save on window move/resize (event-driven, not polling)
 		table.insert(connections, mainWin:GetPropertyChangedSignal("Position"):Connect(function()
 			EliteUI:SaveWindowState()
 		end))
@@ -12526,6 +12786,7 @@ do
 			EliteUI:SaveWindowState()
 		end))
 
+		-- Auto-save when theme changes
 		themeEvent.Event:Connect(function()
 			task.delay(0.5, function()
 				EliteUI:SaveWindowState()
@@ -12534,6 +12795,9 @@ do
 	end
 end
 
+-- ============================================================
+-- THEME LIST & SELECTOR API
+-- ============================================================
 
 -- Returns an array of all built-in theme names
 function EliteUI:GetThemes()
@@ -12565,17 +12829,22 @@ function EliteUI:GetCurrentThemeName()
 	return nil
 end
 
+-- Helper: Creates a theme selector dropdown in a given Tab/Groupbox
 -- Usage: EliteUI:CreateThemeSelector(Tab, { Column = 1, IncludeTransparency = true })
+-- Or through Rayfield wrapper: Rayfield:CreateThemeSelector(Tab, Settings)
 function EliteUI:CreateThemeSelector(targetTab, settings)
 	settings = settings or {}
 	local column = settings.Column or 1
 	local includeTransparency = settings.IncludeTransparency ~= false -- default true
 	local callback = settings.Callback or function() end
 
+	-- Get all theme names
 	local themeNames = EliteUI:GetThemes()
 
+	-- Find current theme for default
 	local currentName = EliteUI:GetCurrentThemeName() or "Default"
 
+	-- Create a groupbox if a groupbox method exists on the target
 	local container = targetTab
 	if targetTab.CreateGroupbox then
 		container = targetTab:CreateGroupbox({
@@ -12585,6 +12854,7 @@ function EliteUI:CreateThemeSelector(targetTab, settings)
 		})
 	end
 
+	-- Theme dropdown
 	local themeDropdown = container:CreateDropdown({
 		Name = "Theme",
 		CurrentOption = { currentName },
@@ -12600,6 +12870,7 @@ function EliteUI:CreateThemeSelector(targetTab, settings)
 		end,
 	})
 
+	-- Transparency slider
 	local transparencySlider = nil
 	if includeTransparency then
 		local currentT = transparencyOverride or (EliteUI.CurrentTheme and EliteUI.CurrentTheme.Transparency) or 0
@@ -12627,9 +12898,19 @@ EliteUIInstance.Enabled = true
 --// ENDSECTION
 
 
+
+-- ============================================================
+-- RAYFIELD-COMPATIBLE API WRAPPER
+-- ============================================================
+-- This wrapper maps Rayfield's API conventions to EliteUI's
+-- native methods, allowing scripts written for Rayfield to
+-- work by just changing the loadstring.
+-- ============================================================
+
 local Rayfield = {}
 Rayfield._internal = EliteUI
 
+-- Track auto-increment indices for elements
 local _autoIndex = 0
 local function nextIndex(prefix)
     _autoIndex = _autoIndex + 1
@@ -12639,68 +12920,86 @@ end
 -- ════════════════════════════════════════════
 -- Rayfield:CreateWindow(Settings)
 -- ════════════════════════════════════════════
+-- Rayfield format:
+--   { Name, LoadingTitle, LoadingSubtitle, Theme, ConfigurationSaving = {Enabled, FileName}, KeySystem }
+-- EliteUI format:
+--   { Name, Subtitle, Icon, LoadingEnabled, LoadingSettings = {Title, Subtitle, Logo}, FileSettings, KeySystem }
 
 function Rayfield:CreateWindow(Settings)
     Settings = Settings or {}
-
+    
     local eliteSettings = {
         Name = Settings.Name or "Elite Level Scripts",
         Subtitle = Settings.LoadingSubtitle or Settings.Subtitle or "",
         Icon = Settings.Icon or nil,
-
+        
         LoadingEnabled = Settings.LoadingEnabled or (Settings.LoadingTitle ~= nil),
         LoadingSettings = {
             Title = Settings.LoadingTitle or Settings.Name or "Elite Level Scripts",
             Subtitle = Settings.LoadingSubtitle or "Loading...",
             Logo = Settings.LoadingLogo or Settings.Logo or nil,
         },
-
+        
         BuildWarnings = false,
         InterfaceAdvertisingPrompts = false,
         NotifyOnCallbackError = true,
-
+        
         DefaultSize = Settings.DefaultSize or nil,
-
+        
         KeySystem = Settings.KeySystem or { Enabled = false },
         Discord = Settings.Discord or { Enabled = false },
     }
-
+    
+    -- Map Rayfield ConfigurationSaving to EliteUI FileSettings
     if Settings.ConfigurationSaving and Settings.ConfigurationSaving.Enabled then
         eliteSettings.FileSettings = {
             ConfigFolder = Settings.ConfigurationSaving.FileName or "EliteConfig",
         }
     end
-
+    -- When ConfigurationSaving is disabled or missing, don't pass FileSettings
+    -- This avoids BuildFolderTree trying to create folders with nil paths
+    
+    -- Apply theme if provided
     if Settings.Theme then
         if type(Settings.Theme) == "string" then
             pcall(function()
                 EliteUI:SetTheme(Settings.Theme)
             end)
         elseif type(Settings.Theme) == "table" then
+            -- Rayfield custom theme table - try to map it
+            -- Rayfield themes use flat Color3 values, EliteUI uses nested structure
+            -- For now, just try direct set
             pcall(function()
                 EliteUI:SetTheme(Settings.Theme)
             end)
         end
     end
-
+    
+    -- Create the actual window
     EliteUI:CreateWindow(eliteSettings)
-
+    
+    -- Create a default tab section for Rayfield-style flat tab creation
     local defaultSection = EliteUI.Window:CreateTabSection()
-
+    
+    -- Build the Window wrapper with Rayfield-compatible methods
     local WindowWrapper = {}
     WindowWrapper._section = defaultSection
     WindowWrapper._sectionCount = 0
     WindowWrapper._sections = { [""] = defaultSection }
-
+    
     -- ════════════════════════════════════════════
+    -- Window:CreateTab(Name, Icon)
     -- ════════════════════════════════════════════
     -- Rayfield: Window:CreateTab("Tab Name", "icon-id")
     -- EliteUI: TabSection:CreateTab({Name, Columns, Icon}, TabIndex)
     -- Icons are now handled natively by EliteUI's setIcon() function
-
+    -- which loads Rayfield's Lucide icon library at startup.
+    
     function WindowWrapper:CreateTab(Name, Icon, Settings)
+        -- Support both Rayfield styles:
+        -- CreateTab("Name", "icon") and CreateTab({Name = "Name", Icon = "icon"})
         local tabName, tabIcon, tabColumns
-
+        
         if type(Name) == "table" then
             tabName = Name.Name or "Tab"
             tabIcon = Name.Icon or ""
@@ -12710,20 +13009,22 @@ function Rayfield:CreateWindow(Settings)
             tabIcon = Icon or ""
             tabColumns = (Settings and Settings.Columns) or 1
         end
-
+        
         local tabIndex = nextIndex("tab")
-
+        
         local nativeTab = defaultSection:CreateTab({
             Name = tabName,
             Columns = tabColumns,
             Icon = tabIcon,
         }, tabIndex)
-
+        
+        -- Build the Tab wrapper with Rayfield-compatible methods
         local TabWrapper = {}
         TabWrapper._native = nativeTab
         TabWrapper._autoGroupbox = nil
         TabWrapper._currentSection = nil
-
+        
+        -- Auto-create a default groupbox for elements added without a section
         local function ensureGroupbox()
             if TabWrapper._autoGroupbox == nil then
                 TabWrapper._autoGroupbox = nativeTab:CreateGroupbox({
@@ -12734,14 +13035,22 @@ function Rayfield:CreateWindow(Settings)
             end
             return TabWrapper._autoGroupbox
         end
-
+        
         -- ════════════════════════════════════════════
+        -- Rayfield-compatible :Set() wrappers
         -- ════════════════════════════════════════════
+        -- Rayfield uses raw values: Toggle:Set(false), Slider:Set(10)
+        -- EliteUI native uses tables: Toggle:Set({CurrentValue = false})
+        -- These wrappers accept BOTH formats for full compatibility.
+        -- Uses task.defer to wrap Set after native definition completes (no polling).
 
         local function deferWrapSet(element, converter)
             if not element then return element end
             task.defer(function()
+                -- task.defer runs after the current resumption cycle, giving
+                -- native task.spawn inside CreateToggle/CreateSlider/etc time to define Set
                 if not element.Set then
+                    -- One extra yield if still not ready
                     task.wait(0.1)
                 end
                 if not element.Set then return end
@@ -12827,19 +13136,23 @@ function Rayfield:CreateWindow(Settings)
         -- ════════════════════════════════════════════
         -- Rayfield: Tab:CreateSection("Section Name")
         -- EliteUI: Tab:CreateGroupbox({Name, Column, Style}, Index)
-
+        -- In Rayfield, CreateSection returns the section object which has element creation methods.
+        -- Elements are added to the LAST created section.
+        
         function TabWrapper:CreateSection(SectionName, Column)
             local groupbox = nativeTab:CreateGroupbox({
                 Name = SectionName or "",
                 Column = Column or 1,
                 Style = 1,
             }, nextIndex("sec"))
-
+            
             TabWrapper._currentSection = groupbox
-
+            
+            -- Build a Section wrapper
             local SectionWrapper = {}
             SectionWrapper._native = groupbox
-
+            
+            -- Forward all element creation to this groupbox with Rayfield-compat Set()
             local wrapSetMap = {
                 Button = wrapButtonSet, Toggle = wrapToggleSet,
                 Slider = wrapSliderSet, Input = wrapInputSet,
@@ -12853,20 +13166,22 @@ function Rayfield:CreateWindow(Settings)
                     return wrapper and wrapper(el) or el
                 end
             end
-
+            
             wrapElement("Button")
             wrapElement("Toggle")
             wrapElement("Slider")
             wrapElement("Input")
             wrapElement("Label")
             wrapElement("Paragraph")
-
+            
             function SectionWrapper:CreateDivider()
                 return groupbox:CreateDivider()
             end
-
+            
+            -- Dropdown in Rayfield is typically on a Label
             function SectionWrapper:CreateDropdown(ElementSettings, Flag)
                 local idx = Flag or nextIndex("dropdown")
+                -- In EliteUI, dropdowns are nested on labels
                 local label = groupbox:CreateLabel({
                     Name = ElementSettings.Name or "Dropdown",
                 }, nextIndex("lbl"))
@@ -12877,6 +13192,7 @@ function Rayfield:CreateWindow(Settings)
                     Placeholder = ElementSettings.Placeholder or nil,
                     Callback = ElementSettings.Callback or function() end,
                 }, idx)
+                -- Rayfield compat: :Refresh(newOptions, clearSelected)
                 if dd and not dd.Refresh then
                     dd.Refresh = function(self, newOptions, clearSelected)
                         local opts = (type(self) == "table" and self ~= dd) and self or newOptions
@@ -12889,7 +13205,8 @@ function Rayfield:CreateWindow(Settings)
                 end
                 return wrapDropdownSet(dd)
             end
-
+            
+            -- Keybind in Rayfield
             function SectionWrapper:CreateKeybind(ElementSettings, Flag)
                 local idx = Flag or nextIndex("bind")
                 local label = groupbox:CreateLabel({
@@ -12901,7 +13218,8 @@ function Rayfield:CreateWindow(Settings)
                     Callback = ElementSettings.Callback or function() end,
                 }, idx)
             end
-
+            
+            -- ColorPicker in Rayfield
             function SectionWrapper:CreateColorPicker(ElementSettings, Flag)
                 local idx = Flag or nextIndex("cp")
                 local label = groupbox:CreateLabel({
@@ -12913,13 +13231,17 @@ function Rayfield:CreateWindow(Settings)
                     Callback = ElementSettings.Callback or function() end,
                 }, idx)
             end
-
+            
             return SectionWrapper
         end
-
+        
         -- ════════════════════════════════════════════
+        -- Direct element creation on Tab (Rayfield style)
         -- ════════════════════════════════════════════
-
+        -- In Rayfield, you can create elements directly on a tab
+        -- without explicitly creating a section first.
+        -- We handle this by auto-creating a default groupbox.
+        
         local function getActiveGroupbox()
             return TabWrapper._currentSection or ensureGroupbox()
         end
@@ -12928,22 +13250,22 @@ function Rayfield:CreateWindow(Settings)
             local gb = getActiveGroupbox()
             return wrapButtonSet(gb:CreateButton(ElementSettings, Flag or nextIndex("btn")))
         end
-
+        
         function TabWrapper:CreateToggle(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             return wrapToggleSet(gb:CreateToggle(ElementSettings, Flag or nextIndex("tgl")))
         end
-
+        
         function TabWrapper:CreateSlider(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             return wrapSliderSet(gb:CreateSlider(ElementSettings, Flag or nextIndex("sld")))
         end
-
+        
         function TabWrapper:CreateInput(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             return wrapInputSet(gb:CreateInput(ElementSettings, Flag or nextIndex("inp")))
         end
-
+        
         function TabWrapper:CreateDropdown(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             local idx = Flag or nextIndex("dropdown")
@@ -12957,6 +13279,7 @@ function Rayfield:CreateWindow(Settings)
                 Placeholder = ElementSettings.Placeholder or nil,
                 Callback = ElementSettings.Callback or function() end,
             }, idx)
+            -- Rayfield compat: :Refresh(newOptions, clearSelected)
             if dd and not dd.Refresh then
                 dd.Refresh = function(self, newOptions, clearSelected)
                     local opts = (type(self) == "table" and self ~= dd) and self or newOptions
@@ -12969,7 +13292,7 @@ function Rayfield:CreateWindow(Settings)
             end
             return wrapDropdownSet(dd)
         end
-
+        
         function TabWrapper:CreateKeybind(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             local idx = Flag or nextIndex("bind")
@@ -12982,7 +13305,7 @@ function Rayfield:CreateWindow(Settings)
                 Callback = ElementSettings.Callback or function() end,
             }, idx)
         end
-
+        
         function TabWrapper:CreateColorPicker(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             local idx = Flag or nextIndex("cp")
@@ -12995,7 +13318,7 @@ function Rayfield:CreateWindow(Settings)
                 Callback = ElementSettings.Callback or function() end,
             }, idx)
         end
-
+        
         function TabWrapper:CreateLabel(NameOrSettings, Flag)
             local gb = getActiveGroupbox()
             local settings
@@ -13006,28 +13329,29 @@ function Rayfield:CreateWindow(Settings)
             end
             return wrapLabelSet(gb:CreateLabel(settings, Flag or nextIndex("lbl")))
         end
-
+        
         function TabWrapper:CreateParagraph(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             return gb:CreateParagraph(ElementSettings, Flag or nextIndex("para"))
         end
-
+        
         function TabWrapper:CreateDivider()
             local gb = getActiveGroupbox()
             return gb:CreateDivider()
         end
-
+        
         -- ════════════════════════════════════════════
+        -- Direct EliteUI access (for power users)
         -- ════════════════════════════════════════════
-
+        
         function TabWrapper:CreateGroupbox(Settings, Index)
             return nativeTab:CreateGroupbox(Settings, Index or nextIndex("grp"))
         end
-
+        
         function TabWrapper:BuildConfigGroupbox(Column, Style)
             return nativeTab:BuildConfigGroupbox(Column, Style)
         end
-
+        
         function TabWrapper:BuildThemeGroupbox(Column, Style)
             return nativeTab:BuildThemeGroupbox(Column, Style)
         end
@@ -13037,13 +13361,20 @@ function Rayfield:CreateWindow(Settings)
         -- ════════════════════════════════════════════
         -- Creates a scrollable ViewportFrame grid inside the tab.
         -- Tiles auto-theme-bind to EliteUI.CurrentTheme.
+        --
         -- config = {
         --     CellWidth  = number,   -- px, default 120
         --     CellHeight = number,   -- px, default 130
         --     Padding    = number,   -- px, default 8
+        --     Section    = string,   -- groupbox header, optional
+        --     Column     = number,   -- tab column, default 1
+        -- }
         -- items = array of {
+        --     Title    = string,
         --     Subtitle = string,           -- optional
-        --     Model    = Instance,         -- Model instance for 3D ViewportFrame preview
+        --     Model    = Instance|string,  -- Model instance or "workspace.Eggs.Basic" path
+        --     Callback = function(),
+        -- }
         -- Returns: { Refresh(newItems), Destroy() }
 
         function TabWrapper:CreateTileGrid(items, config)
@@ -13053,12 +13384,16 @@ function Rayfield:CreateWindow(Settings)
             local padding     = config.Padding    or 8
             local sectionName = config.Section    or ""
 
+            -- Host groupbox
             local gb = nativeTab:CreateGroupbox({
                 Name   = sectionName,
                 Column = config.Column or 1,
                 Style  = 1,
             }, nextIndex("tilegrid"))
 
+            -- Wait for groupbox Instance to be ready, then grab PART_Backdrop
+            -- PART_Backdrop has a real pixel size; PART_Content uses AutomaticSize.Y
+            -- so scale-based sizing only works in PART_Backdrop.
             local backdrop = nil
             local waited = 0
             repeat
@@ -13074,6 +13409,7 @@ function Rayfield:CreateWindow(Settings)
                 return nil
             end
 
+            -- Also grab ParentingItem to remove its list layout (prevents layout fights)
             local container = gb.ParentingItem
             if container then
                 for _, v in ipairs(container:GetChildren()) do
@@ -13081,6 +13417,7 @@ function Rayfield:CreateWindow(Settings)
                 end
             end
 
+            -- Scrolling frame — parented to PART_Backdrop so it fills real pixel space
             local scrollFrame = Instance.new("ScrollingFrame")
             scrollFrame.Size = UDim2.new(1, 0, 1, -barH)
             scrollFrame.Position = UDim2.fromOffset(0, 0)
@@ -13107,6 +13444,7 @@ function Rayfield:CreateWindow(Settings)
             gridPad.PaddingBottom = UDim.new(0, padding)
             gridPad.Parent = scrollFrame
 
+            -- Keep canvas in sync with content
             gridLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 local contentH = gridLayout.AbsoluteContentSize.Y + padding * 2
                 scrollFrame.CanvasSize = UDim2.fromOffset(0, contentH)
@@ -13136,6 +13474,7 @@ function Rayfield:CreateWindow(Settings)
                 tileStroke.Parent = tile
                 ThemeMethods.bindTheme(tileStroke, "Color", "Foregrounds.Dark")
 
+                -- ViewportFrame for 3D model preview
                 local vpH = cellH - 46
                 local vpFrame = Instance.new("ViewportFrame")
                 vpFrame.Size = UDim2.new(1, 0, 0, vpH)
@@ -13148,6 +13487,7 @@ function Rayfield:CreateWindow(Settings)
                 if item.Model then
                     task.spawn(function()
                         task.wait(order * 0.04) -- stagger clones to avoid frame spike
+                        -- Accept Model instance or "workspace.Eggs.Basic" path string
                         local modelInst = nil
                         if typeof(item.Model) == "Instance" then
                             modelInst = item.Model
@@ -13165,6 +13505,7 @@ function Rayfield:CreateWindow(Settings)
                         local ok, clone = pcall(function() return modelInst:Clone() end)
                         if not ok or not clone then return end
 
+                        -- Strip non-visual descendants
                         for _, v in ipairs(clone:GetDescendants()) do
                             if v:IsA("Script") or v:IsA("LocalScript") or v:IsA("ModuleScript")
                             or v:IsA("ProximityPrompt") or v:IsA("ClickDetector")
@@ -13174,6 +13515,7 @@ function Rayfield:CreateWindow(Settings)
                         end
                         clone.Parent = vpFrame
 
+                        -- Auto-frame camera to bounding box
                         local cam = Instance.new("Camera")
                         cam.FieldOfView = 45
                         local ok2, cf, size = pcall(function() return clone:GetBoundingBox() end)
@@ -13189,6 +13531,7 @@ function Rayfield:CreateWindow(Settings)
                     end)
                 end
 
+                -- Title
                 local titleLbl = Instance.new("TextLabel")
                 titleLbl.Size = UDim2.new(1, -8, 0, 18)
                 titleLbl.Position = UDim2.new(0, 4, 1, -42)
@@ -13216,6 +13559,7 @@ function Rayfield:CreateWindow(Settings)
                 subLbl.Parent = tile
                 ThemeMethods.bindTheme(subLbl, "TextColor3", "Foregrounds.Medium")
 
+                -- Hover
                 tile.MouseEnter:Connect(function()
                     Tween(tile, { BackgroundColor3 = EliteUI.CurrentTheme.Backgrounds.Highlight })
                     Tween(tileStroke, { Color = EliteUI.CurrentTheme.Foregrounds.Medium })
@@ -13225,6 +13569,7 @@ function Rayfield:CreateWindow(Settings)
                     Tween(tileStroke, { Color = EliteUI.CurrentTheme.Foregrounds.Dark })
                 end)
 
+                -- Click — accent flash + callback
                 tile.MouseButton1Click:Connect(function()
                     Tween(tileStroke, { Color = EliteUI.CurrentTheme.Foregrounds.Active })
                     task.delay(0.35, function()
@@ -13238,10 +13583,12 @@ function Rayfield:CreateWindow(Settings)
                 return tile
             end
 
+            -- Build initial tiles
             for i, item in ipairs(items or {}) do
                 tileFrames[i] = buildTile(item, i)
             end
 
+            -- Returned grid handle
             local Grid = {}
             Grid.SelectedItem  = nil
             Grid.SelectedItems = {}
@@ -13271,6 +13618,7 @@ function Rayfield:CreateWindow(Settings)
     end
 
     -- ════════════════════════════════════════════
+    -- Window:CreateHomeTab(Settings) - Dashboard built with regular tab API
     -- ════════════════════════════════════════════
     function WindowWrapper:CreateHomeTab(Settings)
         if homeTabCalled then return end
@@ -13279,6 +13627,7 @@ function Rayfield:CreateWindow(Settings)
         Settings = Settings or {}
         Settings.DiscordInvite = Settings.DiscordInvite or ""
 
+        -- Create a normal tab via the wrapper (same as any other tab)
         local DashTab = WindowWrapper:CreateTab("Dashboard", "layout-dashboard")
 
         -- ─── Info Section ───
@@ -13323,19 +13672,21 @@ function Rayfield:CreateWindow(Settings)
 
         return DashTab
     end
-
+    
     -- ════════════════════════════════════════════
+    -- Window:CreateTabSection(Name) - for advanced users
     -- ════════════════════════════════════════════
     function WindowWrapper:CreateTabSection(Name, Visible)
         return EliteUI.Window:CreateTabSection(Name, Visible)
     end
-
+    
     -- ════════════════════════════════════════════
+    -- Window:PromptDialog(Settings) - passthrough
     -- ════════════════════════════════════════════
     function WindowWrapper:PromptDialog(Settings)
         return EliteUI.Window:PromptDialog(Settings)
     end
-
+    
     Rayfield._window = WindowWrapper
     return WindowWrapper
 end
@@ -13343,6 +13694,10 @@ end
 -- ════════════════════════════════════════════
 -- Rayfield:Notify(Settings)
 -- ════════════════════════════════════════════
+-- Rayfield format:
+--   { Title, Content, Duration, Image }
+-- EliteUI format:
+--   { Title, Content, Duration, Icon }
 
 function Rayfield:Notify(Settings)
     Settings = Settings or {}
@@ -13385,6 +13740,7 @@ end
 
 -- Rayfield:CreateThemeSelector(Tab, Settings) - adds theme dropdown + transparency to a tab
 function Rayfield:CreateThemeSelector(tab, settings)
+    -- If tab is a Rayfield wrapper, get the native tab
     local nativeTab = tab
     if tab and tab._nativeTab then
         nativeTab = tab._nativeTab
@@ -13408,6 +13764,7 @@ function Rayfield:LoadConfiguration()
 end
 
 -- ════════════════════════════════════════════
+-- Passthrough properties
 -- ════════════════════════════════════════════
 Rayfield.Themes = EliteUI.Themes
 Rayfield.CurrentTheme = EliteUI.CurrentTheme
@@ -13420,11 +13777,18 @@ Rayfield.Window = EliteUI.Window
 -- Creates a second independent EliteUI window instance.
 -- Identical look, theme, transparency, and widget API to the main window.
 -- Returns a WindowWrapper — use exactly like the main Window object.
+--
 -- settings = {
+--     Name            = string,
+--     LoadingTitle    = string,
+--     LoadingSubtitle = string,
+--     Icon            = string/number,
+-- }
 
 function Rayfield:CreateSubWindow(settings)
     settings = settings or {}
 
+    -- Load a fresh copy of the model asset
     local subModelId = debugV and 136653172778765 or 90058405618888
     local subInst = isStudio
         and script.Parent:WaitForChild("EliteUI V1"):Clone()
@@ -13432,6 +13796,7 @@ function Rayfield:CreateSubWindow(settings)
 
     subInst.Name = "EliteUI_SubWindow_" .. (settings.Name or "SubWindow")
 
+    -- Strip scripts/physics from model
     for _, obj in ipairs(subInst:GetDescendants()) do
         if obj:IsA("LocalScript") or obj:IsA("Script") or obj:IsA("ModuleScript")
         or obj:IsA("BasePart") or obj:IsA("Model") or obj:IsA("Attachment")
@@ -13440,6 +13805,7 @@ function Rayfield:CreateSubWindow(settings)
         end
     end
 
+    -- Parent to same place as main window
     if gethui then
         subInst.Parent = gethui()
     elseif syn and syn.protect_gui then
@@ -13452,6 +13818,7 @@ function Rayfield:CreateSubWindow(settings)
     pcall(function() subInst.OnTopOfCoreBlur = true end)
     subInst.Enabled = true
 
+    -- Position offset from main window so they don't overlap
     local subMain = subInst.MainWindow
     subMain.AnchorPoint = Vector2.zero
     subMain.Position = UDim2.fromOffset(
@@ -13460,6 +13827,8 @@ function Rayfield:CreateSubWindow(settings)
     )
     subMain.Visible = true
 
+    -- Apply current theme to sub window
+    -- We reuse themeEvent so sub window updates when user changes theme
     local subThemeMethods = {
         bindTheme = function(_, object, property, themeKey)
             local function set()
@@ -13481,6 +13850,7 @@ function Rayfield:CreateSubWindow(settings)
         end
     }
 
+    -- Bind all the same theme keys as main window
     local subNav    = subMain.Sidebar.Navigation
     local subTabs   = subMain.Content.ContentMain.Elements
     local subDrag   = subInst:FindFirstChild("Drag")
@@ -13513,7 +13883,9 @@ function Rayfield:CreateSubWindow(settings)
 
     end
 
+    -- Set window title, hide icon, player section, and topbar subheader
     subMain.Sidebar.Header.Text = settings.Name or "Sub Window"
+    -- Hide the brand icon (top of sidebar) and the inline header icon
     pcall(function() subMain.Sidebar.Icon.Visible = false end)
     pcall(function() subMain.Sidebar.Icon.Image = "" end)
     pcall(function() subMain.Sidebar.Header.Icon.Visible = false end)
@@ -13522,8 +13894,12 @@ function Rayfield:CreateSubWindow(settings)
     pcall(function() subMain.Content.Topbar.Headers.Subheader.Text = "" end)
     pcall(function() subMain.Content.Topbar.Headers.Subheader.Visible = false end)
 
+    -- Hide loading screen immediately
     pcall(function() subMain["New Loading Screen"].Visible = false end)
 
+    -- Sync transparency with main window — identical logic to main window's transparencyEvent handler
+    -- Only applies to the background panels (mainWindow, sidebar, topbar, contentMain)
+    -- Never touches text, icons, or UI element content
     local function applySubTransparency()
         local themeAlpha = 0
         if EliteUI.CurrentTheme and EliteUI.CurrentTheme.Transparency then
@@ -13555,6 +13931,7 @@ function Rayfield:CreateSubWindow(settings)
     transparencyEvent.Event:Connect(applySubTransparency)
     task.defer(applySubTransparency)
 
+    -- Register this sub window so main window can close/toggle it
     table.insert(EliteUI.SubWindows, subInst)
     subInst.Destroying:Connect(function()
         for i, sw in ipairs(EliteUI.SubWindows) do
@@ -13565,11 +13942,14 @@ function Rayfield:CreateSubWindow(settings)
         end
     end)
 
+    -- Drag via topbar — sub windows have no Drag cosmetic, pass nil
     pcall(function()
         makeDraggable(subMain.Content.Topbar, subMain, nil, false, nil)
     end)
 
+    -- Wire all topbar controls — identical behavior and theming to main window
     pcall(function()
+        -- Theme all control buttons the same way as main window
         for _, control in pairs(subMain.Content.Topbar.Controls:GetChildren()) do
             if control.ClassName == "TextButton" then
                 subThemeMethods:bindTheme(control, "BackgroundColor3", "Foregrounds.Dark")
@@ -13584,6 +13964,7 @@ function Rayfield:CreateSubWindow(settings)
             end
         end
 
+        -- Close — destroy this sub window
         local closeBtn = subMain.Content.Topbar.Controls:FindFirstChild("Close")
         if closeBtn then
             closeBtn.MouseButton1Click:Connect(function()
@@ -13591,6 +13972,7 @@ function Rayfield:CreateSubWindow(settings)
             end)
         end
 
+        -- Maximize / Unmaximize
         local subMaximized = false
         local subOldSize, subOldPos
         local maximizeBtn = subMain.Content.Topbar.Controls:FindFirstChild("Maximize")
@@ -13611,6 +13993,7 @@ function Rayfield:CreateSubWindow(settings)
             end)
         end
 
+        -- Minimize — hide/show sub window
         local subMinimized = false
         local minimizeBtn = subMain.Content.Topbar.Controls:FindFirstChild("Minimize")
         if minimizeBtn then
@@ -13628,6 +14011,7 @@ function Rayfield:CreateSubWindow(settings)
         end
     end)
 
+    -- Corner grip dots — identical to main window
     do
         local cornerConfigs = {
             { name="BR", anchor=Vector2.new(1,1), pos=UDim2.new(1,-3,1,-3), dots={{10,10},{6,10},{10,6},{2,10},{6,6},{10,2}} },
@@ -13658,6 +14042,7 @@ function Rayfield:CreateSubWindow(settings)
         end
     end
 
+    -- Full resize system — identical to main window
     do
         local SUB_HP = RESIZE_HANDLE_PX
         local SUB_CP = RESIZE_CORNER_PX
@@ -13747,12 +14132,15 @@ function Rayfield:CreateSubWindow(settings)
         end)
     end
 
+    -- Create a TabSection for this sub window
     local subTabSection = nil
     local subWindowObj  = { Instance = subMain, TabSections = {} }
 
+    -- Temporarily swap EliteUI.Window so CreateTabSection registers correctly
     local origWindow = EliteUI.Window
     EliteUI.Window   = subWindowObj
 
+    -- Build a TabSection in the sub window's navigation
     local subNavTemplate = subNav.NavigationSectionTemplate
     subTabSection = {
         Tabs     = {},
@@ -13768,8 +14156,10 @@ function Rayfield:CreateSubWindow(settings)
     subWindowObj.TabSections = { main = subTabSection }
     subWindowObj.CurrentTab  = nil
 
+    -- Restore EliteUI.Window
     EliteUI.Window = origWindow
 
+    -- Build WindowWrapper with CreateTab — identical API to main window
     local SubWindowWrapper = {}
     SubWindowWrapper._section  = subTabSection
     SubWindowWrapper._inst     = subInst
@@ -13790,6 +14180,7 @@ function Rayfield:CreateSubWindow(settings)
         self._tabIndex = self._tabIndex + 1
         local tabIndex = "subtab_" .. self._tabIndex
 
+        -- Clone nav button only — no tabPage clone needed, realPage handles content
         local navBtn = subNavTemplate.TabButtonTemplate:Clone()
         navBtn.Visible = true
         navBtn.Header.Text = tabName
@@ -13811,6 +14202,8 @@ function Rayfield:CreateSubWindow(settings)
         }
         subTabSection.Tabs[tabIndex] = subTab
 
+        -- Return a full TabWrapper — identical to main window
+        -- Temporarily swap EliteUI.Window to trick CreateGroupbox into using subWindowObj
         local function withSubWindow(fn)
             local orig = EliteUI.Window
             EliteUI.Window = subWindowObj
@@ -13819,22 +14212,30 @@ function Rayfield:CreateSubWindow(settings)
             return result
         end
 
+        -- Build TabWrapper using the SAME Rayfield wrapper factory
+        -- We create a fake nativeTab that delegates to subTab
         local fakeNativeTab = {
             Instances  = subTab.Instances,
             Values     = subTab.Values,
             Groupboxes = subTab.Groupboxes,
             CreateGroupbox = function(_, GroupboxSettings, GroupIndex)
                 return withSubWindow(function()
+                    -- Temporarily register subTab in subWindowObj
                     local secName = "__sub_main"
                     if not subWindowObj.TabSections[secName] then
                         subWindowObj.TabSections[secName] = subTabSection
                     end
                     subTabSection.Tabs[tabIndex] = subTab
+                    -- Call native CreateGroupbox logic via EliteUI
+                    -- We need to use the Tab object from EliteUI's system
+                    -- The cleanest way: reuse nativeTab from our real TabSection
                     return nil -- fallback below
                 end)
             end,
         }
 
+        -- Simpler approach: create a real native tab in a hidden section on the MAIN window
+        -- then reparent its page to our sub window
         local hiddenSection = EliteUI.Window:CreateTabSection("__hidden_sub", false)
         pcall(function() hiddenSection.Instance.Visible = false end)
 
@@ -13845,6 +14246,7 @@ function Rayfield:CreateSubWindow(settings)
             Columns = tabColumns,
         }, realTabIndex)
 
+        -- Hide its button and reparent its page to our sub window's tab area
         pcall(function() realNativeTab.Instances.Button.Visible = false end)
         pcall(function() realNativeTab.Instances.Button.Parent  = subInst end)
 
@@ -13854,6 +14256,7 @@ function Rayfield:CreateSubWindow(settings)
         realPage.Visible  = true
         realPage.Parent   = subTabs
 
+        -- Wire nav button: style self, deactivate others, jump to realPage
         local function activateTab()
             subTabs.UIPageLayout:JumpTo(realPage)
             subTab.Active = true
@@ -13876,12 +14279,14 @@ function Rayfield:CreateSubWindow(settings)
 
         navBtn.Interact.MouseButton1Click:Connect(activateTab)
         if self._tabIndex == 1 then
+            -- Wait one frame for realPage to be registered by UIPageLayout, then activate
             task.spawn(function()
                 task.wait()
                 activateTab()
             end)
         end
 
+        -- Now build a standard TabWrapper on realNativeTab — full widget support
         local TabWrapper = {}
         TabWrapper._native         = realNativeTab
         TabWrapper._autoGroupbox   = nil
@@ -13900,6 +14305,7 @@ function Rayfield:CreateSubWindow(settings)
             return TabWrapper._currentSection or ensureGroupbox()
         end
 
+        -- Rayfield compat Set() wrappers (same as main window)
         local function deferWrap(el, conv)
             if not el then return el end
             task.defer(function()
@@ -13986,16 +14392,46 @@ function Rayfield:CreateSubWindow(settings)
         -- Tab:CreateTileGrid(items, config)
         -- ═══════════════════════════════════════════════════════════════
         -- Generic reusable tile grid widget. Works in any tab, any game.
+        --
         -- config = {
+        --   CellWidth     = number,   px width of each tile (default 120)
+        --   CellHeight    = number,   px height of each tile (default 130)
+        --   Padding       = number,   grid padding in px (default 8)
+        --   Section       = string,   optional header label above grid
+        --   SelectLabel   = string,   info bar text when nothing is selected
+        --   MultiSelect   = bool,     allow multiple tiles selected simultaneously
+        --   ActionButtons = {         buttons shown in bottom bar
+        --     { Name=string, Callback=function(selectedItem, allSelected) }
+        --   },
+        --   ActionToggles = {         toggle switches shown in bottom bar
+        --     { Name=string, NameOn=string, CurrentValue=bool,
+        --       Callback=function(isOn, selectedItem, allSelected) }
+        --   },
+        -- }
+        --
         -- items = array of {
+        --   Title    = string,        tile label
+        --   Subtitle = string,        tile sublabel (optional)
+        --   Model    = Instance,      Model instance for 3D ViewportFrame (optional)
+        --   InfoText = string,        info bar text when this tile is selected (optional)
+        --   Callback = function(item) fires on click, after selection state updates
+        -- }
+        --
         -- Returns: Grid object {
+        --   SelectedItem  = item|nil       single-select: currently selected item
+        --   SelectedItems = {item,...}     all selected items (MultiSelect mode)
+        --   Refresh(newItems)              replace all tiles with new items
+        --   Destroy()                      remove the grid
+        -- }
         function TabWrapper:CreateTileGrid(items, config)
             config = config or {}
             local cellW         = config.CellWidth    or 120
             local cellH         = config.CellHeight   or 130
             local padding       = config.Padding      or 8
             local multiSelect   = config.MultiSelect  or false
+            -- Unified Actions array — mix buttons and toggles in any order
             -- Each action: { Type="Button"|"Toggle", Name=string, NameOn=string, CurrentValue=bool, Callback=fn }
+            -- Legacy ActionButtons still supported for backwards compat
             local actions = config.Actions or {}
             for _, b in ipairs(config.ActionButtons or {}) do
                 table.insert(actions, { Type="Button", Name=b.Name, Callback=b.Callback })
@@ -14006,6 +14442,7 @@ function Rayfield:CreateSubWindow(settings)
             local btnBarH  = hasBar and 44 or 0
             local barH     = infoBarH + btnBarH
 
+            -- Wait for Column_1 in the real tab page
             -- Column_1 is created by CreateTab via task.spawn so we need to wait for it
             local column = nil
             local waited = 0
@@ -14019,12 +14456,14 @@ function Rayfield:CreateSubWindow(settings)
                 return nil
             end
 
+            -- Clear column layout so we can fill it freely
             for _, v in ipairs(column:GetChildren()) do
                 if v:IsA("UIListLayout") or v:IsA("UIPadding") then v:Destroy() end
             end
             pcall(function() column.ScrollingEnabled = false end)
             pcall(function() column.CanvasSize = UDim2.fromOffset(0,0) end)
 
+            -- Scrolling tile grid
             local scrollFrame = Instance.new("ScrollingFrame")
             scrollFrame.Size = UDim2.new(1, 0, 1, -barH)
             scrollFrame.Position = UDim2.fromOffset(0, 0)
@@ -14053,10 +14492,12 @@ function Rayfield:CreateSubWindow(settings)
                 scrollFrame.CanvasSize = UDim2.fromOffset(0, gridLayout.AbsoluteContentSize.Y + padding*2)
             end)
 
+            -- Grid state — declared before action bar so callbacks close over it correctly
             local Grid = {}
             Grid.SelectedItem  = nil
             Grid.SelectedItems = {}
 
+            -- Action bar
             local infoLabel = nil
 
             if barH > 0 then
@@ -14066,6 +14507,7 @@ function Rayfield:CreateSubWindow(settings)
                 sep.Parent=column
                 ThemeMethods.bindTheme(sep,"BackgroundColor3","Foregrounds.Dark")
 
+                -- Info row
                 local infoRow = Instance.new("Frame")
                 infoRow.Size=UDim2.new(1,0,0,infoBarH); infoRow.Position=UDim2.new(0,0,1,-barH)
                 infoRow.BackgroundTransparency=1; infoRow.BorderSizePixel=0; infoRow.ZIndex=4
@@ -14081,6 +14523,8 @@ function Rayfield:CreateSubWindow(settings)
                 infoLabel.Parent=infoRow
                 ThemeMethods.bindTheme(infoLabel,"TextColor3","Foregrounds.Active")
 
+
+                -- Button row
                 local btnRow = Instance.new("Frame")
                 btnRow.Size=UDim2.new(1,0,0,btnBarH); btnRow.Position=UDim2.new(0,0,1,-btnBarH)
                 btnRow.BackgroundTransparency=1; btnRow.BorderSizePixel=0; btnRow.ZIndex=4
@@ -14099,6 +14543,7 @@ function Rayfield:CreateSubWindow(settings)
 
                 local totalActions = #actions
 
+                -- Render each action in assigned order — Button or Toggle
                 for i, action in ipairs(actions) do
                     local isToggle = (action.Type == "Toggle")
                     local togValue = isToggle and (action.CurrentValue or false) or nil
@@ -14155,8 +14600,10 @@ function Rayfield:CreateSubWindow(settings)
                     end
                 end
 
+
             end
 
+            -- Selection state
             local selectedTiles  = {} -- frame -> item, for MultiSelect
             local selectedTile   = nil
             local selectedStroke = nil
@@ -14204,6 +14651,7 @@ function Rayfield:CreateSubWindow(settings)
                 local tileStroke=Instance.new("UIStroke"); tileStroke.Thickness=1; tileStroke.Parent=tile
                 ThemeMethods.bindTheme(tileStroke,"Color","Foregrounds.Dark")
 
+                -- ViewportFrame for 3D model
                 local vpH = cellH - 42
                 local vpFrame = Instance.new("ViewportFrame")
                 vpFrame.Size=UDim2.new(1,0,0,vpH); vpFrame.BackgroundTransparency=1
@@ -14277,9 +14725,11 @@ function Rayfield:CreateSubWindow(settings)
                     if not multiSelect then
                         deselectAll()
                     elseif selectedTiles[tile] then
+                        -- Deselect this tile in multi-select
                         selectedTiles[tile] = nil
                         Tween(tile,{BackgroundColor3=EliteUI.CurrentTheme.Backgrounds.Groupbox})
                         Tween(tileStroke,{Color=EliteUI.CurrentTheme.Foregrounds.Dark,Thickness=1})
+                        -- Rebuild SelectedItems
                         Grid.SelectedItems = {}
                         for _, it in pairs(selectedTiles) do table.insert(Grid.SelectedItems, it) end
                         Grid.SelectedItem = Grid.SelectedItems[1] or nil
@@ -14288,6 +14738,7 @@ function Rayfield:CreateSubWindow(settings)
                         return
                     end
 
+                    -- Select this tile
                     selectedTiles[tile] = item
                     selectedTile        = tile
                     selectedStroke      = tileStroke
@@ -14330,5 +14781,6 @@ function Rayfield:CreateSubWindow(settings)
 
     return SubWindowWrapper
 end
+
 
 return Rayfield
