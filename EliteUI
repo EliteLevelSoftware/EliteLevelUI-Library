@@ -24,7 +24,7 @@
 
 --// SECTION : Core Variables
 
-local Release = "v3.37"
+local Release = "v3.38"
 local debugV = false
 
 local EliteUI = {
@@ -3540,39 +3540,37 @@ local EliteUIInstance: ScreenGui = isStudio and script.Parent:WaitForChild("Elit
 	or game:GetObjects("rbxassetid://" .. modelId)[1]
 local buildAttempts = 0
 local correctBuild = false
-local warned = false
 
-repeat
-	if
-		EliteUIInstance.Resources:FindFirstChild("Build")
-		and EliteUIInstance.Resources.Build.Value == EliteUI.InterfaceBuild
-	then
-		correctBuild = true
-		break
-	end
+if EliteUIInstance.Resources:FindFirstChild("Build")
+	and EliteUIInstance.Resources.Build.Value == EliteUI.InterfaceBuild
+then
+	correctBuild = true
+end
 
-	toDestroy, EliteUIInstance =
-		EliteUIInstance,
-		isStudio and script.Parent:FindFirstChild("EliteUI V1") or game:GetObjects("rbxassetid://" .. modelId)[1]
-	if toDestroy and not isStudio then
-		toDestroy:Destroy()
-	end
-
-	buildAttempts += 1
-
-until buildAttempts >= 2
+if not correctBuild then
+	warn("[EliteUI] Build mismatch — expected " .. tostring(EliteUI.InterfaceBuild)
+		.. ", got " .. tostring(EliteUIInstance.Resources:FindFirstChild("Build")
+		and EliteUIInstance.Resources.Build.Value or "nil")
+		.. ". Continuing with loaded build.")
+end
 
 EliteUIInstance.Name = (((getgenv and getgenv().InterfaceName) or EliteUIInstance.Name) or "Elite Level Interface Suite")
 EliteUI.Instance = EliteUIInstance
 EliteUIInstance.Enabled = false
 
--- Remove any scripts or 3D/physics objects from model template
-for _, obj in ipairs(EliteUIInstance:GetDescendants()) do
-	if obj:IsA("LocalScript") or obj:IsA("Script") or obj:IsA("ModuleScript")
-		or obj:IsA("BasePart") or obj:IsA("Model") or obj:IsA("Attachment")
-		or obj:IsA("Constraint") or obj:IsA("BodyMover")
-		or obj:IsA("WorldModel")
-	then
+-- Remove scripts/physics objects in batches — avoids one big frame spike
+do
+	local toRemove = {}
+	for _, obj in ipairs(EliteUIInstance:GetDescendants()) do
+		if obj:IsA("LocalScript") or obj:IsA("Script") or obj:IsA("ModuleScript")
+			or obj:IsA("BasePart") or obj:IsA("Model") or obj:IsA("Attachment")
+			or obj:IsA("Constraint") or obj:IsA("BodyMover")
+			or obj:IsA("WorldModel")
+		then
+			table.insert(toRemove, obj)
+		end
+	end
+	for _, obj in ipairs(toRemove) do
 		pcall(function() obj:Destroy() end)
 	end
 end
