@@ -22,7 +22,7 @@
 
 ]]
 
-local Release = "v3.42"
+local Release = "v3.43"
 local debugV = false
 
 local EliteUI = {
@@ -3511,6 +3511,7 @@ local EliteUIInstance: ScreenGui = isStudio and script.Parent:WaitForChild("Elit
 	or game:GetObjects("rbxassetid://" .. modelId)[1]
 local buildAttempts = 0
 local correctBuild = false
+local warned = false
 
 repeat
 	if EliteUIInstance.Resources:FindFirstChild("Build")
@@ -3724,17 +3725,6 @@ function EliteUI:Notification(data)
 
 	task.spawn(function()
 		local creationTime = tick()
-
-		-- Guard: Resources and Notifications may not be ready if Notify is called
-		-- during UI construction (e.g. from locked element InitialCallbacks)
-		local waited = 0
-		while (not Resources or not Resources:FindFirstChild("Elements") or not EliteUIInstance.Notifications) and waited < 5 do
-			task.wait(0.05)
-			waited = waited + 0.05
-		end
-		if not Resources or not Resources:FindFirstChild("Elements") or not EliteUIInstance.Notifications then
-			return
-		end
 
 		-- Notification Object Creation
 		local newNotification = Resources.Elements.NotificationTemplate:Clone()
