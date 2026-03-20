@@ -1,30 +1,28 @@
 --[[
 
-    ██████╗ ██╗     ██╗████████╗███████╗    ██╗     ███████╗██╗   ██╗███████╗██╗     
-    ██╔════╝ ██║     ██║╚══██╔══╝██╔════╝    ██║     ██╔════╝██║   ██║██╔════╝██║     
-    █████╗   ██║     ██║   ██║   █████╗      ██║     █████╗  ██║   ██║█████╗  ██║     
-    ██╔══╝   ██║     ██║   ██║   ██╔══╝      ██║     ██╔══╝  ╚██╗ ██╔╝██╔══╝  ██║     
+    ██████╗ ██╗     ██╗████████╗███████╗    ██╗     ███████╗██╗   ██╗███████╗██╗
+    ██╔════╝ ██║     ██║╚══██╔══╝██╔════╝    ██║     ██╔════╝██║   ██║██╔════╝██║
+    █████╗   ██║     ██║   ██║   █████╗      ██║     █████╗  ██║   ██║█████╗  ██║
+    ██╔══╝   ██║     ██║   ██║   ██╔══╝      ██║     ██╔══╝  ╚██╗ ██╔╝██╔══╝  ██║
     ███████╗ ███████╗██║   ██║   ███████╗    ███████╗███████╗ ╚████╔╝ ███████╗███████╗
     ╚══════╝ ╚══════╝╚═╝   ╚═╝   ╚══════╝    ╚══════╝╚══════╝  ╚═══╝  ╚══════╝╚══════╝
-    
+
     Elite Level UI
     Rayfield-Compatible API Layer
-    
+
     Usage is identical to Rayfield:
-    
+
     local Rayfield = loadstring(...)()
     local Window = Rayfield:CreateWindow({ Name = "My Hub", ... })
     local Tab = Window:CreateTab("Tab Name", "icon-id")
     local Section = Tab:CreateSection("Section Name")
     Section:CreateToggle({ Name = "Toggle", CurrentValue = false, Callback = function(v) end })
-    
+
     All Rayfield methods are supported. Just change the loadstring.
-    
+
 ]]
 
---// SECTION : Core Variables
-
-local Release = "v3.38"
+local Release = "v3.40"
 local debugV = false
 
 local EliteUI = {
@@ -54,10 +52,6 @@ local EliteUI = {
 	},
 }
 
---// ENDSECTION
-
---// SECTION : Services And Variables
-
 -- Services
 
 local function GetService(serviceName)
@@ -66,17 +60,12 @@ end
 local Lighting = GetService("Lighting")
 local Players = GetService("Players")
 local Teams = GetService("Teams")
-local StatsService = GetService("Stats")
 local RunService = GetService("RunService")
 local UserInputService = GetService("UserInputService")
 local TweenService = GetService("TweenService")
 local HttpService = GetService("HttpService")
-local Localization = GetService("LocalizationService")
 local CollectionService = GetService("CollectionService")
-local TeleportService = GetService("TeleportService")
-local TextService = GetService("TextService")
 local GuiService = GetService("GuiService")
-local MarketplaceService = GetService("MarketplaceService")
 local ReplicatedStorage = GetService("ReplicatedStorage")
 local ContentProvider = GetService("ContentProvider")
 local InputManager = GetService("VirtualInputManager")
@@ -89,7 +78,6 @@ local Mouse = Player:GetMouse()
 local GuiInset, _ = GuiService:GetGuiInset()
 GuiInset = GuiInset.Y - 20
 local themeEvent = Instance.new("BindableEvent")
-
 
 local transparencyEvent = Instance.new("BindableEvent") -- fires when transparency changes
 local transparencyOverride = 0.5 -- default 50% transparency, overridden by saved state
@@ -201,8 +189,6 @@ local Request = (syn and syn.request)
 	or (http and http.request)
 	or http_request
 	or request
-
---//SUBSECTION : Classes
 
 local String = {}
 local Table = {}
@@ -805,7 +791,7 @@ local Themes = {
 		Backgrounds = {
 			Dark = Color3.fromRGB(24, 24, 37),       -- base
 			Medium = Color3.fromRGB(30, 30, 46),     -- mantle
-			Light = Color3.fromRGB(30, 30, 46),     
+			Light = Color3.fromRGB(30, 30, 46),
 			Groupbox = Color3.fromRGB(30, 30, 46),
 			Highlight = Color3.fromRGB(49, 50, 68)  -- surface0
 		},
@@ -2430,8 +2416,6 @@ end
 EliteUI.Themes = Themes
 EliteUI.CurrentTheme = deepCopy(Themes.Default)
 
---//ENDSUBSECTION
-
 function Tween.Info(style: string?, direction: string?, time: number?)
 	style = style or "Exponential"
 	direction = direction or "Out"
@@ -2442,10 +2426,6 @@ end
 local IconProvider = isStudio and require(ReplicatedStorage.IconProvider)
 
 local connections = {}
-
---// ENDSECTION
-
---// SECTION : Methods
 
 -- used so the index system allows for universal linking without breaking
 local function GetNestedValue(tbl, path)
@@ -2882,8 +2862,6 @@ function String.IsEmptyOrNull(str: string)
 	return false
 end
 
---// SUBSECTION : Window Methods
-
 -- this is a way to allow for tweening cus roblox doesnt have opacity yet and my lazy ass is not gonna be able to set each and every value without crashing out - also this makes it extremely future/change proof
 -- Table for Transparency Values Of All Instances
 local TransparencyValues = {
@@ -3037,7 +3015,7 @@ local function Hide(Interface, JustHide: boolean?, Notify: boolean?, Bind: strin
 			Tween(Interface, { Transparency = 1 })
 		end
 	end
-	
+
 	-- hide popups
 	if not isStudio and EliteUI.Instance.MobileToggle.Visible then
 		InputManager:SendTouchEvent(
@@ -3056,7 +3034,6 @@ local function Hide(Interface, JustHide: boolean?, Notify: boolean?, Bind: strin
 			0, 0, 0, false, game, 0
 		)
 	end
-
 
 	task.wait(0.18)
 	if Interface.ClassName == "ScreenGui" then
@@ -3527,12 +3504,6 @@ local function makeDraggable(Bar, Window: Frame, dragBar, enableTaptic, tapticOf
 	end)
 end
 
---// ENDSUBSECTION
-
---// ENDSECTION
-
---// SECTION : Interface Management
-
 -- Interface Model
 local modelId = debugV and 136653172778765 or 90058405618888
 
@@ -3651,8 +3622,6 @@ end
 -- Module-level safe reference used everywhere instead of bare EliteDrag
 local EliteDrag = _dragEl
 
---// SUBSECTION : Interface Variables
-
 local mainWindow: Frame = EliteUIInstance.MainWindow
 local Resources = EliteUIInstance.Resources
 local navigation: Frame = mainWindow.Sidebar.Navigation
@@ -3667,8 +3636,6 @@ local RESIZE_HANDLE_PX = 6
 local RESIZE_CORNER_PX = 14
 local RESIZE_MIN_W = 450
 local RESIZE_MIN_H = 300
-
---// ENDSUBSECTION
 
 if UserInputService.TouchEnabled then
 	EliteUIInstance.Notifications.Interactable = false
@@ -3694,10 +3661,6 @@ if PlayerGui:FindFirstChild("TouchGui") then
 
 	check()
 end
-
---// ENDSECTION
-
---// SECTION : Library Methods
 
 -- Sets what to do on destruction
 function EliteUI:OnDestroy(func)
@@ -3744,19 +3707,6 @@ function EliteUI:Notification(data)
 		Duration = number, **
 	}
 	]]
-
-	--[[if not correctBuild and not warned then
-		warned = true
-		warn('EliteUI | Build Mismatch')
-		warn('EliteUI may run into issues as it seems you are running an incompatible interface version ('.. (EliteUIInstance.Resources:FindFirstChild("Build") and EliteUIInstance.Resources:FindFirstChild("Build").Value or 'No Build') ..'). of EliteUI\n\nThis version of EliteUI is intended for interface build '..EliteUI.InterfaceBuild..'.\nTry rerunning the script. If the issue persists, join our discord for support.')
-		pcall(function()
-			EliteUI:Notification({
-				Title = "EliteUI - Build Mismatch",
-				Content = 'EliteUI may run into issues as it seems you are running an incompatible interface version ('.. (EliteUIInstance.Resources:FindFirstChild("Build") and EliteUIInstance.Resources:FindFirstChild("Build").Value or 'No Build') ..'). of EliteUI\n\nThis version of EliteUI is intended for interface build '..EliteUI.InterfaceBuild..'. \nTry rerunning the script. If the issue persists, join our discord for support.',
-				Icon = 129398364168201
-			})
-		end)
-	end]]
 
 	task.spawn(function()
 		local creationTime = tick()
@@ -3988,12 +3938,12 @@ end
 function EliteUI:CreateWindow(WindowSettings)
 	-- The Options Table
 	--[[
-	
+
 	WindowSettings = {
 		Name = string,
 		Subtitle = string,
 		Icon = number (asset id), **
-		
+
 		LoadingEnabled = bool,
 		LoadingSettings = {
 			Style = number,
@@ -4001,42 +3951,42 @@ function EliteUI:CreateWindow(WindowSettings)
 			Subtitle = string,
 			Logo = number (asset id), **
 		},
-		
+
 		BuildWarnings = bool, **
 		InterfaceAdvertisingPrompts = bool, **
 		NotifyOnCallbackError = bool,
-		
+
 		FileSettings = {
 			RootFolder = string, **
-			ConfigFolder = string,**  
+			ConfigFolder = string,**
 			ThemeFolder = string, **
 		},
-		
+
 		DefaultSize = UDim2, **
-		
+
 		KeySystem = {
 			Enabled = bool,
 			Title = string, ****
 			Subtitle = string, ****
 			Note = string, ****
-			
+
 			SaveKey = bool, ****
 			KeyFile = string, ****
-			
+
 			KeyObtainLink = string, ****
 			Discord = string, ****
-			
+
 			HttpKey = bool, ****
 			Keys = {string, string...}, ****
 		},
-		
+
 		Discord = { -- u can still have it in the home tab, this is just auto join
 			Enabled = bool,
 			RememberJoins = bool, ****
 			Link = string ****
 		},
 	}
-	
+
 	]]
 	--
 
@@ -4110,8 +4060,7 @@ function EliteUI:CreateWindow(WindowSettings)
 		Values = WindowSettings,
 	}
 
-	--// SUBSECTION : Initial Code
-	do
+		do
 		-- Transparency event handler (acrylic removed, transparency slider still works)
 		transparencyEvent.Event:Connect(function()
 			-- Calculate effective transparency from theme + override
@@ -4239,9 +4188,7 @@ function EliteUI:CreateWindow(WindowSettings)
 		)
 
 		mainWindow.ModalOverlay.Visible = false
-		--[[mainWindow["Loading Screen"].Version.Text = WindowSettings.LoadingSettings.Title == "Elite Level Interface Suite" and Release or "EliteUI " .. Release
-		mainWindow["Loading Screen"].Frame.SubFrame.Title.Text = WindowSettings.LoadingSettings.Title or ""
-		mainWindow["Loading Screen"].Frame.SubFrame.Subtitle.Text = WindowSettings.LoadingSettings.Subtitle or ""]]
+
 		if WindowSettings.LoadingSettings then
 			if WindowSettings.LoadingSettings.Logo then
 				mainWindow["New Loading Screen"].Frame.ImageLabel.Image.Image = "rbxassetid://"
@@ -4560,26 +4507,7 @@ function EliteUI:CreateWindow(WindowSettings)
 				task.wait(1.1 - 0.08)
 				Tween(main, { BackgroundTransparency = 1 }, nil, Tween.Info("Quint", "InOut", 0.2))
 				-- like this cus uhh tween method dont got all the properties
-				--[[if not loadingScreenLogoChanged then
-				TweenService:Create(mainWindow["Loading Screen"].Frame.ImageLabel, TweenInfo.new(1.7, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 2, false, 0.2), {Rotation = 450}):Play()
-			end
 
-			task.wait(3)
-
-			Hide(mainWindow["Loading Screen"], true, false, false)
-
-			task.wait()
-
-			Tween(mainWindow, {
-				Size = UDim2.fromOffset(mainWindow.Size.X.Offset + 65, mainWindow.Size.Y.Offset + 55),
-				Position = UDim2.fromOffset(
-					Camera.ViewportSize.X / 2 - EliteUIInstance.MainWindow.Size.X.Offset / 2 - 65/2,
-					((Camera.ViewportSize.Y / 2 - GuiInset) - EliteUIInstance.MainWindow.Size.Y.Offset / 2) - (GuiInset/2) - 55/2
-				)
-			})
-			Tween(EliteDrag, {
-				Position = UDim2.new(0.5, 0, 0, ((Camera.ViewportSize.Y / 2 - GuiInset) - EliteUIInstance.MainWindow.Size.Y.Offset / 2) - (GuiInset/2) + mainWindow.Size.Y.Offset + 10)
-			})]]
 			end
 
 			mainWindow["New Loading Screen"].Visible = false
@@ -4853,26 +4781,23 @@ function EliteUI:CreateWindow(WindowSettings)
 		--if not WindowSettings.LoadingEnabled then task.wait(.15) end
 	end
 
-	--// ENDSUBSECTION
-	--// SUBSECTION : User Methods
-
 	function EliteUI.Window:PromptDialog(ModalSettings)
 		--[[
 		Name = "Header",
    		Content = "Description",
     	Type = 1,
-    	Actions = { 
+    	Actions = {
         	Primary = {
             	Name = "Okay!",
             	Icon = IconProvider:GetIcon("check", "Material"),
             	Callback = function()
 
             	end
-        	}, 
+        	},
         	{
             	Name = "Cancel",
             	Callback = function()
-					
+
             	end
         	},
     	}
@@ -4882,9 +4807,9 @@ function EliteUI:CreateWindow(WindowSettings)
         	{
             	PlaceholderText = ""
             	...from input
-            	
+
             	Callback = function(Text)
-					
+
             	end
         	},
     	}
@@ -5033,7 +4958,6 @@ function EliteUI:CreateWindow(WindowSettings)
 
 						if not Success then
 							warn(`EliteUI - Callback Error | Dialog {Modal.Values.Name}`)
-							print(Response)
 							if WindowSettings.NotifyOnCallbackError then
 								EliteUI:Notification({
 									Title = Modal.Values.Name .. " Callback Error",
@@ -5078,7 +5002,6 @@ function EliteUI:CreateWindow(WindowSettings)
 
 							if not Success then
 								warn(`EliteUI - Callback Error | Dialog {Modal.Values.Name}`)
-								print(Response)
 								if WindowSettings.NotifyOnCallbackError then
 									EliteUI:Notification({
 										Title = Modal.Values.Name .. " Callback Error",
@@ -5261,7 +5184,6 @@ function EliteUI:CreateWindow(WindowSettings)
 				Tab.Instances.Page.ScrollingEnabled = false
 			end
 		end)
-
 
 		-- Backdrop image
 		if TabSettings.Backdrop then
@@ -5731,8 +5653,6 @@ function EliteUI:CreateWindow(WindowSettings)
 			ThemeMethods.bindTheme(TabSection.Instance.Header, "TextColor3", "Foregrounds.Medium")
 		end
 
-		--// SUBSECTION : User Methods
-
 		function TabSection:Set(NewName)
 			Name = NewName
 			TabSection.Instance.Header.Text = Name
@@ -5751,13 +5671,13 @@ function EliteUI:CreateWindow(WindowSettings)
 		function TabSection:CreateCustomTab(TabSettings, TabIndex)
 			-- Tab Settings Table
 			--[[
-			
+
 			TabSettings = {
 				Name = string,
 				Columns = number, (ranged from 1-3)
 				Icon = number/string, **
 			}
-			
+
 			]]
 
 			TabSettings.Icon = TabSettings.Icon or ""
@@ -5883,8 +5803,6 @@ function EliteUI:CreateWindow(WindowSettings)
 
 			TabSettings.Page.Parent = Tab.Instances.Page
 
-			--// SUBSECTION : User Methods
-
 			function Tab:Set(NewTabSettings)
 				TabSettings = NewTabSettings
 				Tab.Values = TabSettings
@@ -5904,8 +5822,6 @@ function EliteUI:CreateWindow(WindowSettings)
 				Tab = nil
 			end
 
-			--// ENDSUBSECTION
-
 			Tab.Instances.Button.Parent = EliteUI.Window.TabSections[Name].Instance
 			EliteUI.Window.TabSections[Name].Tabs[TabIndex] = Tab
 			return EliteUI.Window.TabSections[Name].Tabs[TabIndex]
@@ -5914,13 +5830,13 @@ function EliteUI:CreateWindow(WindowSettings)
 		function TabSection:CreateTab(TabSettings, TabIndex)
 			-- Tab Settings Table
 			--[[
-			
+
 			TabSettings = {
 				Name = string,
 				Columns = number, (ranged from 1-3)
 				Icon = number/string, **
 			}
-			
+
 			]]
 
 			TabSettings.Icon = TabSettings.Icon or ""
@@ -6102,8 +6018,6 @@ function EliteUI:CreateWindow(WindowSettings)
 				end
 			end)
 
-			--// SUBSECTION : User Methods
-
 			function Tab:Set(NewTabSettings)
 				TabSettings = NewTabSettings
 				Tab.Values = TabSettings
@@ -6124,18 +6038,6 @@ function EliteUI:CreateWindow(WindowSettings)
 			end
 
 			-- deprecated as its kinda useless, groupbox seperate ur stuff already and dividers are in groupboxes. like rlly, these being in the actual tabs are useless
-			--[[function Tab:CreateDivider(Column) -- will be changed in next update to be other items where its linked back to the library
-				local Divider = {}
-
-				Divider.Instance = tabs["Tab_TEMPLATE"].ScrollingCollumnTemplate.Divider:Clone()
-				Divider.Instance.Parent = Tab.Instances.Page["Column_" .. Column]
-
-				function Divider:Destroy()
-					Divider.Instance:Destroy()
-				end
-
-				return Divider
-			end]]
 
 			function Tab:CreateGroupbox(GroupboxSettings, GroupIndex)
 				--[[
@@ -6270,874 +6172,14 @@ function EliteUI:CreateWindow(WindowSettings)
 					Groupbox = nil
 				end
 
-				--// SUBSECTION : Legacy User Methods
-
-				--[=[
-
-				function Groupbox:CreatePrimaryButton(ElementSettings) -- these will be merged in the next update where we allow style changing.
-
-					--[[
-					ElementSettings = {
-						Name = string,
-						Icon = number, **
-						ImageSource = string, **
-						
-						Callback = function(nil),
-					}
-					-]]
-					
-
-					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
-
-					local Element = {
-						Values = ElementSettings
-					}
-
-					Element.Instance = GroupboxTemplateInstance["Button_TEMPLATE_Style1"]:Clone()
-					Element.Instance.Visible = true
-					Element.Instance["PART_Backdrop"].DropShadowHolder.DropShadow.ImageTransparency = 1
-					Element.Instance.Parent = Groupbox.ParentingItem
-
-					Element.Instance.Name = "BUTTON_" .. ElementSettings.Name
-					Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
-					Element.Instance["PART_Backdrop"].Header.Icon.Visible = ElementSettings.Icon ~= nil
-					if Element.Instance["PART_Backdrop"].Header.Icon.Visible == false then
-						Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,6)
-					else
-						Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,32)
-					end
-					Element.Instance["PART_Backdrop"].Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
-
-					function Element:Set(NewElementSettings)
-						for i,v in pairs(ElementSettings) do
-							if NewElementSettings[i] == nil then
-								NewElementSettings[i] = v
-							end
-						end
-
-						ElementSettings = NewElementSettings
-
-						Element.Values = ElementSettings
-						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = ElementSettings
-
-						Element.Instance.Name = "BUTTON_" .. ElementSettings.Name
-						Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
-						Element.Instance["PART_Backdrop"].Header.Icon.Visible = ElementSettings.Icon ~= nil
-						if Element.Instance["PART_Backdrop"].Header.Icon.Visible == false then
-							Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,6)
-						else
-							Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,32)
-						end
-						Element.Instance["PART_Backdrop"].Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
-						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name].Values = ElementSettings
-					end
-
-					function Element:Destroy()
-						Element.Instance:Destroy()
-					end
-
-					Element.Instance.MouseEnter:Connect(function()
-						Tween(Element.Instance["PART_Backdrop"].DropShadowHolder.DropShadow, {ImageTransparency = 0.73})
-					end)
-
-					Element.Instance.MouseLeave:Connect(function()
-						Tween(Element.Instance["PART_Backdrop"].DropShadowHolder.DropShadow, {ImageTransparency = 1})
-
-						if Element.Instance["PART_Backdrop"].AccentBrighter.Enabled == true then
-							Element.Instance["PART_Backdrop"].AccentBrighter.Enabled = false
-							Element.Instance["PART_Backdrop"].Accent.Enabled = true
-						end
-					end)
-
-					Element.Instance.Interact.MouseButton1Click:Connect(function()
-						local Success,Response = pcall(Element.Values.Callback)
-
-						if not Success then
-							Element.Instance["PART_Backdrop"].Header.Text = "Callback Error"
-							warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
-							print(tostring(Response))
-							wait(0.5)
-							Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
-						end
-					end)
-
-					Element.Instance.Interact.MouseButton1Down:Connect(function()
-						Element.Instance["PART_Backdrop"].AccentBrighter.Enabled = true
-						Element.Instance["PART_Backdrop"].Accent.Enabled = false
-					end)
-
-					Element.Instance.Interact.MouseButton1Up:Connect(function()
-						Element.Instance["PART_Backdrop"].AccentBrighter.Enabled = false
-						Element.Instance["PART_Backdrop"].Accent.Enabled = true
-					end)
-
-					if GroupboxSettings.Style == 2 then
-						Groupbox.Instance["PART_Backdrop"].Size = UDim2.new(1,0,0, Groupbox.Instance["PART_Backdrop"].AbsoluteSize.Y)
-					end
-
-					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = Element
-					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
-				end
-
-				function Groupbox:CreateSecondaryButton(ElementSettings) -- these will be merged in the next update where we allow style changing.
-					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
-
-					local Element = {
-						Values = ElementSettings
-					}
-
-					Element.Instance = GroupboxTemplateInstance["Button_TEMPLATE_Style2"]:Clone()
-					Element.Instance.Visible = true
-					Element.Instance.Parent = Groupbox.ParentingItem
-
-					Element.Instance.Name = "BUTTON_" .. ElementSettings.Name
-					Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
-					Element.Instance["PART_Backdrop"].Header.Icon.Visible = ElementSettings.Icon ~= nil
-					if Element.Instance["PART_Backdrop"].Header.Icon.Visible == false then
-						Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,6)
-					else
-						Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,32)
-					end
-					Element.Instance["PART_Backdrop"].Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
-
-					function Element:Set(NewElementSettings)
-						for i,v in pairs(ElementSettings) do
-							if NewElementSettings[i] == nil then
-								NewElementSettings[i] = v
-							end
-						end
-
-						ElementSettings = NewElementSettings
-
-						Element.Values = ElementSettings
-						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = ElementSettings
-
-						Element.Instance.Name = "BUTTON_" .. ElementSettings.Name
-						Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
-						Element.Instance["PART_Backdrop"].Header.Icon.Visible = ElementSettings.Icon ~= nil
-						if Element.Instance["PART_Backdrop"].Header.Icon.Visible == false then
-							Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,6)
-						else
-							Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,32)
-						end
-						Element.Instance["PART_Backdrop"].Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
-						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name].Values = ElementSettings
-					end
-
-					function Element:Destroy()
-						Element.Instance:Destroy()
-					end
-
-					Element.Instance.MouseEnter:Connect(function()
-						Tween(Element.Instance["PART_Backdrop"], {BackgroundColor3 = Color3.fromRGB(31, 33, 38)})
-					end)
-
-					Element.Instance.MouseLeave:Connect(function()
-						Tween(Element.Instance["PART_Backdrop"], {BackgroundColor3 = Color3.fromRGB(27, 29, 34)})
-					end)
-
-					Element.Instance.Interact.MouseButton1Click:Connect(function()
-						local Success,Response = pcall(ElementSettings.Callback)
-
-						if not Success then
-							Element.Instance["PART_Backdrop"].Header.Text = "Callback Error"
-							warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
-							print(tostring(Response))
-							wait(0.5)
-							Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
-						end
-					end)
-
-					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = Element
-					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
-				end
-
-				function Groupbox:CreateCheckbox(ElementSettings) -- will be merged with switch in next update via styles. adding a checkbox icon soon
-
-					--[[
-					ElementSettings = {
-						Name = string,
-						Icon = number, **
-						ImageSource = string, **
-						InitialCallback = bool, **
-						CurrentValue = bool, **
-						
-						Callback = function(bool),
-					}
-					--]]
-
-					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
-					ElementSettings.InitialCallback = ElementSettings.InitialCallback or true
-					ElementSettings.CurrentValue = ElementSettings.CurrentValue or false
-
-					local Element = {
-						Values = ElementSettings,
-					}
-
-					Element.Instance = GroupboxTemplateInstance.Checkbox_TEMPLATE_Disabled:Clone()
-					Element.Instance.Visible = true
-					Element.Instance.Parent = Groupbox.ParentingItem
-
-					Element.Instance.Name = "CHECKBOX_" .. ElementSettings.Name
-					Element.Instance.Header.Text = ElementSettings.Name
-					Element.Instance.Header.Icon.Visible = ElementSettings.Icon ~= nil
-					if Element.Instance.Header.Icon.Visible == false then
-						Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,6)
-					else
-						Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,32)
-					end
-					Element.Instance.Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
-
-					local function Set(bool)
-						if bool then
-							Tween(Element.Instance.Checkbox, {BackgroundTransparency = 0})
-						else
-							Tween(Element.Instance.Checkbox, {BackgroundTransparency = 0.9})
-						end
-
-						Element.Values.CurrentValue = bool
-					end
-
-					--starting
-					do
-						Set(Element.Values.CurrentValue)
-						if ElementSettings.InitialCallback then
-							local Success,Response = pcall(function()
-								ElementSettings.Callback(Element.Values.CurrentValue)
-							end)
-
-							if not Success then
-								Element.Instance.Header.Text = "Callback Error"
-								warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
-								print(tostring(Response))
-								wait(0.5)
-								Element.Instance.Header.Text = ElementSettings.Name
-							end
-						end
-					end
-
-					Element.Instance.Checkbox.MouseEnter:Connect(function()
-						Element.Instance.Checkbox.AccentBrighter.Enabled = true
-						Element.Instance.Checkbox.Accent.Enabled = false
-					end)
-
-					Element.Instance.Checkbox.MouseLeave:Connect(function()
-						Element.Instance.Checkbox.AccentBrighter.Enabled = false
-						Element.Instance.Checkbox.Accent.Enabled = true
-					end)
-
-					Element.Instance.Checkbox.Interact.MouseButton1Click:Connect(function()
-						Element.Values.CurrentValue = not Element.Values.CurrentValue
-						Set(Element.Values.CurrentValue)
-
-						local Success,Response = pcall(function()
-							Element.Values.Callback(Element.Values.CurrentValue)
-						end)
-
-						if not Success then
-							Element.Instance.Header.Text = "Callback Error"
-							warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
-							print(tostring(Response))
-							wait(0.5)
-							Element.Instance.Header.Text = ElementSettings.Name
-						end
-					end)
-
-					function Element:Set(NewElementSettings)
-						for i,v in pairs(ElementSettings) do
-							if NewElementSettings[i] == nil then
-								NewElementSettings[i] = v
-							end
-						end
-
-						ElementSettings = NewElementSettings
-
-						Element.Values = ElementSettings
-
-						Element.Instance.Name = "CHECKBOX_" .. ElementSettings.Name
-						Element.Instance.Header.Text = ElementSettings.Name
-						Element.Instance.Header.Icon.Visible = ElementSettings.Icon ~= nil
-						if Element.Instance.Header.Icon.Visible == false then
-							Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,6)
-						else
-							Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,32)
-						end
-						Element.Instance.Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
-
-						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name].Values = ElementSettings
-					end
-
-					function Element:Destroy()
-						Element.Instance:Destroy()
-					end
-
-					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = Element
-					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
-				end
-
-				function Groupbox:CreateSwitch(ElementSettings)
-
-					--[[
-					ElementSettings = {
-						Name = string,
-						Icon = number, **
-						ImageSource = string, **
-						InitialCallback = bool, **
-						CurrentValue = bool, **
-						
-						Callback = function(bool),
-					}
-					]]
-
-					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
-					ElementSettings.InitialCallback = ElementSettings.InitialCallback or true
-					ElementSettings.CurrentValue = ElementSettings.CurrentValue or false
-
-					local Element = {
-						Values = ElementSettings,
-					}
-
-					Element.Instance = GroupboxTemplateInstance.Switch_TEMPLATE_Disabled:Clone()
-					Element.Instance.Visible = true
-					Element.Instance.Parent = Groupbox.ParentingItem
-
-					Element.Instance.Name = "SWITCH_" .. ElementSettings.Name
-					Element.Instance.Header.Text = ElementSettings.Name
-					Element.Instance.Header.Icon.Visible = ElementSettings.Icon ~= nil
-					if Element.Instance.Header.Icon.Visible == false then
-						Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,6)
-					else
-						Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,32)
-					end
-					Element.Instance.Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
-
-					local function Set(bool)
-						if bool then
-							Tween(Element.Instance.Switch, {BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(255,255,255)})
-							Tween(Element.Instance.Switch.Knob, {Position = UDim2.new(0,20,.5,0), BackgroundColor3 = Color3.fromRGB(255,255,255), BackgroundTransparency = 0})
-							Tween(Element.Instance.Switch.UIStroke, {Color = Color3.fromRGB(255,255,255)})
-							Tween(Element.Instance.Switch.DropShadowHolder.DropShadow, {ImageTransparency = 0})
-							Element.Instance.Switch.Accent.Enabled = true
-							Element.Instance.Switch.UIStroke.Accent.Enabled = true
-						else
-							Tween(Element.Instance.Switch, {BackgroundTransparency = 1, BackgroundColor3 = Color3.fromRGB(165,165,165)})
-							Tween(Element.Instance.Switch.Knob, {Position = UDim2.new(0,0,.5,0), BackgroundColor3 = Color3.fromRGB(165,165,165), BackgroundTransparency = 0.5})
-							Tween(Element.Instance.Switch.UIStroke, {Color = Color3.fromRGB(165,165,165)})
-							Tween(Element.Instance.Switch.DropShadowHolder.DropShadow, {ImageTransparency = 1})
-							Element.Instance.Switch.Accent.Enabled = false
-							Element.Instance.Switch.UIStroke.Accent.Enabled = false
-						end
-
-						Element.Values.CurrentValue = bool
-					end
-
-					--starting
-					do
-						Set(Element.Values.CurrentValue)
-						if ElementSettings.InitialCallback then
-							local Success,Response = pcall(function()
-								ElementSettings.Callback(Element.Values.CurrentValue)
-							end)
-
-							if not Success then
-								Element.Instance.Header.Text = "Callback Error"
-								warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
-								print(tostring(Response))
-								wait(0.5)
-								Element.Instance.Header.Text = ElementSettings.Name
-							end
-						end
-					end
-
-					Element.Instance.Switch.Interact.MouseButton1Click:Connect(function()
-						Element.Values.CurrentValue = not Element.Values.CurrentValue
-						Set(Element.Values.CurrentValue)
-
-						local Success,Response = pcall(function()
-							ElementSettings.Callback(Element.Values.CurrentValue)
-						end)
-
-						if not Success then
-							Element.Instance.Header.Text = "Callback Error"
-							warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
-							print(tostring(Response))
-							wait(0.5)
-							Element.Instance.Header.Text = ElementSettings.Name
-						end
-					end)
-
-					function Element:Set(NewElementSettings)
-						for i,v in pairs(ElementSettings) do
-							if NewElementSettings[i] == nil then
-								NewElementSettings[i] = v
-							end
-						end
-
-						ElementSettings = NewElementSettings
-
-						Element.Values = ElementSettings
-
-						Element.Instance.Name = "SWITCH_" .. ElementSettings.Name
-						Element.Instance.Header.Text = ElementSettings.Name
-						Element.Instance.Header.Icon.Visible = ElementSettings.Icon ~= nil
-						if Element.Instance.Header.Icon.Visible == false then
-							Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,6)
-						else
-							Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,32)
-						end
-						Element.Instance.Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
-
-						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name].Values = ElementSettings
-					end
-
-					function Element:Destroy()
-						Element.Instance:Destroy()
-					end
-
-					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = Element
-					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
-				end
-
-
-				-- element creation logic
-				function Groupbox:CreateDropdown(ElementSettings)
-					
-					-[[
-					ElementSettings = {
-						Name = string,
-						Icon = number, **
-						ImageSource = string, **
-						Options = table, {string ...}
-						CurrentOption = table/string, {string ...} **
-						MultipleOptions = bool, **
-						Special = number, ** -- 0/nil for none, 1 for Player, 2 for Teams, more hopefully coming soon
-						
-						Callback = function(table)
-					}
-					]]
-
-					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
-					ElementSettings.CurrentOption = ElementSettings.CurrentOption or ({ElementSettings.Options[1]})
-					ElementSettings.MultipleOptions = ElementSettings.MultipleOptions or false
-					ElementSettings.Special = ElementSettings.Special or 0
-
-					local Element = {
-						Values = ElementSettings,
-						Instances = {},
-						State = false
-					}
-
-					Element.Instances.Element = GroupboxTemplateInstance.Dropdown_TEMPLATE:Clone()
-					Element.Instances.Element.Parent = Groupbox.ParentingItem
-					Element.Instances.Element.Visible = true
-
-					Element.Instances.Element.Name = "DROPDOWN_" .. ElementSettings.Name
-					Element.Instances.Element.Header.Text = ElementSettings.Name
-
-
-					Element.Instances.Popup = mainWindow["Popup Overlay"].Dropdown_TEMPLATE:Clone()
-					Element.Instances.Popup.Parent = mainWindow["Popup Overlay"]
-					Element.Instances.Popup.Header.Text = ElementSettings.Name
-
-
-					--// Interaction System \\--
-					local _dropdownOutsideConn = nil
-					Element.Instances.Element.Icon.MouseButton1Click:Connect(function()
-						mainWindow["Popup Overlay"].Visible = true
-						Element.Instances.Popup.Visible = true
-
-						if _dropdownOutsideConn then _dropdownOutsideConn:Disconnect() end
-						_dropdownOutsideConn = UserInputService.InputBegan:Connect(function(i, g)
-							if g or i.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-							local p, pos, size = i.Position, Element.Instances.Popup.AbsolutePosition, Element.Instances.Popup.AbsoluteSize
-							if not (p.X >= pos.X and p.X <= pos.X + size.X and p.Y >= pos.Y and p.Y <= pos.Y + size.Y) then
-								mainWindow["Popup Overlay"].Visible = false
-								Element.Instances.Popup.Visible = false
-								if _dropdownOutsideConn then _dropdownOutsideConn:Disconnect(); _dropdownOutsideConn = nil end
-							end
-						end)
-					end)
-
-					local function ActivateColorSingle(name)
-						for _, Option in pairs(Element.Instances.Popup.Content:GetChildren()) do
-							if Option.ClassName == "Frame" and not string.find(Option.Name, "Option_Template") then
-								Tween(Option, {BackgroundTransparency = 1})
-								Tween(Option.Header, {TextColor3 = Color3.fromRGB(100, 100, 100)})
-								Option.Header.Accent.Enabled = false
-								Option.Icon.Accent.Enabled = false
-							end
-						end
-
-
-						Tween(Element.Instances.Popup.Content[name], {BackgroundTransparency = 0.8})
-						Tween(Element.Instances.Popup.Content[name].Header, {TextColor3 = Color3.fromRGB(255,255,255)})
-						Element.Instances.Popup.Content[name].Header.Accent.Enabled = true
-						Element.Instances.Popup.Content[name].Icon.Accent.Enabled = true
-
-					end
-
-					local function CB(Sel, Func)
-						local Success, Response = pcall(function()
-							ElementSettings.Callback(Sel)
-						end)
-
-						if Success and Func then
-							Func()
-						end
-					end
-
-					local function Refresh()
-						for i,v in pairs(ElementSettings.Options) do
-							local Option = Element.Instances.Popup.Content.Option_TEMPLATE:Clone()
-							local OptionHover = false
-
-							Option.Header.Text = v
-							Option.Name = v
-
-							Option.Interact.MouseButton1Click:Connect(function()
-								local Selected
-								if ElementSettings.MultipleOptions then
-									if table.find(ElementSettings.CurrentOption, v) then
-										RemoveTable(ElementSettings.CurrentOption, v)
-
-										if not OptionHover then
-											Tween(Option.Header, {TextColor3 = Color3.fromRGB(100, 100, 100)})
-										end
-										Option.BackgroundTransparency = 1
-										Option.Header.Accent.Enabled = false
-										Option.Icon.Accent.Enabled = false
-									else
-										table.insert(ElementSettings.CurrentOption, v)
-										Tween(Option.Header, {TextColor3 = Color3.fromRGB(255, 255, 255)})
-										Option.BackgroundTransparency = 0.8
-										Option.Header.Accent.Enabled = true
-										Option.Icon.Accent.Enabled = true
-									end
-									Selected = ElementSettings.CurrentOption
-
-								else
-									ElementSettings.CurrentOption = {v}
-									Selected = v
-
-									ActivateColorSingle(v)
-								end
-
-
-								CB(Selected, function()
-									if ElementSettings.MultipleOptions then
-										if not ElementSettings.CurrentOption and type(ElementSettings.CurrentOption) == "table" then
-											ElementSettings.CurrentOption = {}
-										end
-									end
-								end)
-							end)
-
-
-							Option.Visible = true
-							Option.Parent = Element.Instances.Popup.Content
-
-							Option.Interact.MouseEnter:Connect(function()
-								OptionHover = true
-								if Option.Header.Accent.Enabled then
-									return
-								else
-									Tween(Option.Header, {TextColor3 = Color3.fromRGB(200,200,200)})
-								end
-							end)
-
-							Option.Interact.MouseLeave:Connect(function()
-								OptionHover = false
-								if Option.Header.Accent.Enabled then
-									return
-								else
-									Tween(Option.Header, {TextColor3 = Color3.fromRGB(100,100,100)})
-								end
-							end)	
-
-						end
-					end
-
-					Refresh()
-
-					if ElementSettings.CurrentOption then
-						if type(ElementSettings.CurrentOption) == "string" then
-							ElementSettings.CurrentOption = {ElementSettings.CurrentOption}
-						end
-						if not ElementSettings.MultipleOptions and type(ElementSettings.CurrentOption) == "table" then
-							ElementSettings.CurrentOption = {ElementSettings.CurrentOption[1]}
-						end
-					else
-						ElementSettings.CurrentOption = {}
-					end
-
-					local Selected, ind = nil,0
-					for i,v in pairs(ElementSettings.CurrentOption) do
-						ind = ind + 1
-					end
-					if ind == 1 then Selected = ElementSettings.CurrentOption[1] else Selected = ElementSettings.CurrentOption end
-					CB(Selected)
-					if type(Selected) == "string" then 
-						Tween(Element.Instances.Popup.Content[Selected], {BackgroundTransparency = 0.8})
-						Tween(Element.Instances.Popup.Content[Selected].Header, {TextColor3 = Color3.fromRGB(255,255,255)})
-						Element.Instances.Popup.Content[Selected].Header.Accent.Enabled = true
-						Element.Instances.Popup.Content[Selected].Icon.Accent.Enabled = true
-					else
-						for i,v in pairs(Selected) do
-							Tween(Element.Instances.Popup.Content[Selected], {BackgroundTransparency = 0.8})
-							Tween(Element.Instances.Popup.Content[Selected].Header, {TextColor3 = Color3.fromRGB(255,255,255)})
-							Element.Instances.Popup.Content[Selected].Header.Accent.Enabled = true
-							Element.Instances.Popup.Content[Selected].Icon.Accent.Enabled = true
-						end
-					end
-
-					if ElementSettings.MultipleOptions then
-						if not ElementSettings.CurrentOption and type(ElementSettings.CurrentOption) == "table" then
-							ElementSettings.CurrentOption = {}
-						end
-					end
-
-					function Element:Destroy()
-						Element.Instance:Destroy()
-					end
-
-					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = Element
-					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
-				end
-
-				function Groupbox:CreateBind(ElementSettings) -- will be merged with toggles and labels soon
-	
-					--[[
-					ElementSettings = {
-						Name = string,
-						Icon = number, **
-						ImageSource = string, **
-						HoldToInteract = bool, **
-						CurrentValue = string, 
-						SyncToggleState = bool, ** -- required to be made on toggle to use, coming soon
-						
-						-- if creating on a parent toggle, do not create the callback here. create it in the parent toggle, it will sync automatically
-						Callback = function(bool), -- Returns bool whether the bind is active or not. If HoldToInteract is true, it is recommended to put your script in a while boolean do loop
-						ChangedCallback = function(string), ** -- Returns the new keybind as a string (See the documentation list for all keybinds to string)
-					}
-					]]
-					
-
-					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
-					ElementSettings.HoldToInteract = ElementSettings.HoldToInteract or false
-					ElementSettings.SyncToggleState = ElementSettings.SyncToggleState or true
-					ElementSettings.ChangedCallback = ElementSettings.ChangedCallback or function() end
-
-					local Element = {
-						Values = ElementSettings,
-					}
-
-					Element.Instance = GroupboxTemplateInstance.Bind_TEMPLATE:Clone()
-					Element.Instance.Visible = true
-					Element.Instance.Parent = Groupbox.ParentingItem
-
-					Element.Instance.Name = "BIND_" .. ElementSettings.Name
-					Element.Instance.Header.Text = ElementSettings.Name
-					Element.Instance.Header.Icon.Visible = ElementSettings.Icon ~= nil
-					if Element.Instance.Header.Icon.Visible == false then
-						Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,6)
-					else
-						Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,32)
-					end
-					Element.Instance.Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
-
-					local CheckingForKey = false
-					local Active = false
-
-					Element.Instance.Bind.Text = ElementSettings.CurrentValue
-
-					Element.Instance.Bind.Focused:Connect(function()
-						task.wait()
-						CheckingForKey = true
-					end)
-
-					Element.Instance.Bind.FocusLost:Connect(function()
-						CheckingForKey = false
-						if Element.Instance.Bind.Text == (nil or "") then
-							Element.Instance.Bind.Text = ElementSettings.CurrentValue
-						end
-					end)
-
-					UserInputService.InputBegan:Connect(function(input, processed)
-
-						if CheckingForKey then
-
-							if input.UserInputType == Enum.UserInputType.Keyboard then
-								if input.KeyCode ~= Enum.KeyCode.Unknown and input.KeyCode ~= Enum.KeyCode[EliteUI.WindowKeybind] then
-									local SplitMessage = string.split(tostring(input.KeyCode), ".")
-									local NewKeyNoEnum = SplitMessage[3]
-									Element.Instance.Bind.Text = tostring(NewKeyNoEnum)
-									Element.Values.CurrentValue = tostring(NewKeyNoEnum)
-									local Success,Response = pcall(function()
-										Element.Values.ChangedCallback(Element.Values.CurrentValue)
-									end)
-
-									if not Success then
-										Element.Instance.Header.Text = "Callback Error"
-										warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
-										print(tostring(Response))
-										wait(0.5)
-										Element.Instance.Header.Text = ElementSettings.Name
-									end
-									Element.Instance.Bind:ReleaseFocus()
-								end
-							else
-								if input.UserInputType == Enum.UserInputType.MouseButton1 then
-									Element.Instance.Bind.Text = "MB1"
-									Element.Values.CurrentValue = "MB1"
-									Element.Instance.Bind:ReleaseFocus()
-									local Success,Response = pcall(function()
-										Element.Values.ChangedCallback(Element.Values.CurrentValue)
-									end)
-
-									if not Success then
-										Element.Instance.Header.Text = "Callback Error"
-										warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
-										print(tostring(Response))
-										wait(0.5)
-										Element.Instance.Header.Text = ElementSettings.Name
-									end
-								elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-									Element.Instance.Bind.Text = "MB2"
-									Element.Values.CurrentValue = "MB2"
-									Element.Instance.Bind:ReleaseFocus()
-									local Success,Response = pcall(function()
-										Element.Values.ChangedCallback(Element.Values.CurrentValue)
-									end)
-
-									if not Success then
-										Element.Instance.Header.Text = "Callback Error"
-										warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
-										print(tostring(Response))
-										wait(0.5)
-										Element.Instance.Header.Text = ElementSettings.Name
-									end
-								end
-							end
-
-						elseif Element.Values.CurrentValue ~= nil and not processed then 
-
-							if Element.Values.CurrentValue == "MB1" then
-								if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
-									return
-								end
-							elseif Element.Values.CurrentValue == "MB2" then	
-								if input.UserInputType ~= Enum.UserInputType.MouseButton2 then
-									return
-								end
-							else
-								if input.KeyCode ~= Enum.KeyCode[Element.Values.CurrentValue] then
-									return
-								end
-							end
-
-							local Held = true
-							local Connection
-							Connection = input.Changed:Connect(function(prop)
-								if prop == "UserInputState" then
-									Connection:Disconnect()
-									Held = false
-								end
-							end)
-
-							if not Element.Values.HoldToInteract then
-								Active = not Active
-								local Success,Response = pcall(function()
-									Element.Values.Callback(Active)
-								end)
-
-								if not Success then
-									Element.Instance.Header.Text = "Callback Error"
-									warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
-									print(tostring(Response))
-									wait(0.5)
-									Element.Instance.Header.Text = ElementSettings.Name
-								end
-							else
-								wait(0.1)
-								if Held then
-									local Loop; Loop = RunService.Stepped:Connect(function()
-										if not Held then
-											local Success,Response = pcall(function()
-												Element.Values.Callback(Active)
-											end)
-
-											if not Success then
-												Element.Instance.Header.Text = "Callback Error"
-												warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
-												print(tostring(Response))
-												wait(0.5)
-												Element.Instance.Header.Text = ElementSettings.Name
-											end
-											Loop:Disconnect()
-										else
-											local Success,Response = pcall(function()
-												Element.Values.Callback(Active)
-											end)
-
-											if not Success then
-												Element.Instance.Header.Text = "Callback Error"
-												warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
-												print(tostring(Response))
-												wait(0.5)
-												Element.Instance.Header.Text = ElementSettings.Name
-											end
-										end
-									end)	
-								end
-							end
-						end
-					end)
-
-					function Element:Set(NewElementSettings)
-						for i,v in pairs(ElementSettings) do
-							if NewElementSettings[i] == nil then
-								NewElementSettings[i] = v
-							end
-						end
-
-						ElementSettings = NewElementSettings
-
-						Element.Values = ElementSettings
-
-						Element.Instance.Name = "BIND_" .. ElementSettings.Name
-						Element.Instance.Header.Text = ElementSettings.Name
-						Element.Instance.Header.Icon.Visible = ElementSettings.Icon ~= nil
-						if Element.Instance.Header.Icon.Visible == false then
-							Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,6)
-						else
-							Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,32)
-						end
-						Element.Instance.Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
-
-						Element.Instance.Bind.Text = ElementSettings.CurrentValue
-
-						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name].Values = ElementSettings
-					end
-
-					function Element:Destroy()
-						Element.Instance:Destroy()
-					end
-
-					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = Element
-					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
-				end
-				
-
-				]=]
-
 				function Groupbox:CreateButton(ElementSettings, Index)
 					--[[
 					ElementSettings = {
 						Name = string,
 						Icon = number, **
-						
+
 						Style = number, **
-						
+
 						Callback = function(nil),
 					}
 					]]
@@ -7299,7 +6341,6 @@ function EliteUI:CreateWindow(WindowSettings)
 								if not Success then
 									ElementInstance["PART_Backdrop"].Header.Header.Text = "Callback Error"
 									warn(`EliteUI - Callback Error | {Element.Values.Name} ({Index})`)
-									print(Response)
 									if WindowSettings.NotifyOnCallbackError then
 										EliteUI:Notification({
 											Title = Element.Values.Name .. " Callback Error",
@@ -7307,7 +6348,7 @@ function EliteUI:CreateWindow(WindowSettings)
 											Icon = 129398364168201,
 										})
 									end
-									wait(0.5)
+									task.wait(0.5)
 									ElementInstance["PART_Backdrop"].Header.Header.Text = ElementSettings.Name
 								end
 							end)
@@ -7401,9 +6442,9 @@ function EliteUI:CreateWindow(WindowSettings)
 
 						CurrentValue = bool,
 						CheckboxIcon = number, **
-						
+
 						Style = number, **
-						
+
 						Callback = function(bool),
 					}
 					]]
@@ -7530,7 +6571,6 @@ function EliteUI:CreateWindow(WindowSettings)
 										warn(
 											`EliteUI - Callback Error | {Element.Values.Name} ({Index})`
 										)
-										print(Response)
 										if WindowSettings.NotifyOnCallbackError then
 											EliteUI:Notification({
 												Title = Element.Values.Name .. " Callback Error",
@@ -7538,7 +6578,7 @@ function EliteUI:CreateWindow(WindowSettings)
 												Icon = 129398364168201,
 											})
 										end
-										wait(0.5)
+										task.wait(0.5)
 										ElementInstance.Header.Text = ElementSettings.Name
 									end
 								end
@@ -7566,7 +6606,6 @@ function EliteUI:CreateWindow(WindowSettings)
 										warn(
 											`EliteUI - Callback Error | {Element.Values.Name} ({Index})`
 										)
-										print(Response)
 										if WindowSettings.NotifyOnCallbackError then
 											EliteUI:Notification({
 												Title = Element.Values.Name .. " Callback Error",
@@ -7574,7 +6613,7 @@ function EliteUI:CreateWindow(WindowSettings)
 												Icon = 129398364168201,
 											})
 										end
-										wait(0.5)
+										task.wait(0.5)
 										ElementInstance.Header.Text = ElementSettings.Name
 									end
 								end)
@@ -7616,7 +6655,6 @@ function EliteUI:CreateWindow(WindowSettings)
 										warn(
 											`EliteUI - Callback Error | {Element.Values.Name} ({Index})`
 										)
-										print(Response)
 										if WindowSettings.NotifyOnCallbackError then
 											EliteUI:Notification({
 												Title = Element.Values.Name .. " Callback Error",
@@ -7624,7 +6662,7 @@ function EliteUI:CreateWindow(WindowSettings)
 												Icon = 129398364168201,
 											})
 										end
-										wait(0.5)
+										task.wait(0.5)
 										ElementInstance.Header.Text = ElementSettings.Name
 									end
 								end
@@ -7658,7 +6696,6 @@ function EliteUI:CreateWindow(WindowSettings)
 										warn(
 											`EliteUI - Callback Error | {Element.Values.Name} ({Index})`
 										)
-										print(Response)
 										if WindowSettings.NotifyOnCallbackError then
 											EliteUI:Notification({
 												Title = Element.Values.Name .. " Callback Error",
@@ -7666,7 +6703,7 @@ function EliteUI:CreateWindow(WindowSettings)
 												Icon = 129398364168201,
 											})
 										end
-										wait(0.5)
+										task.wait(0.5)
 										ElementInstance.Header.Text = ElementSettings.Name
 									end
 								end)
@@ -7719,7 +6756,6 @@ function EliteUI:CreateWindow(WindowSettings)
 									ElementInstance.Header.Text = "Callback Error"
 								end
 								warn(`EliteUI - Callback Error | {Element.Values.Name} ({Index})`)
-								print(Response)
 								if WindowSettings.NotifyOnCallbackError then
 									EliteUI:Notification({
 										Title = Element.Values.Name .. " Callback Error",
@@ -7727,7 +6763,7 @@ function EliteUI:CreateWindow(WindowSettings)
 										Icon = 129398364168201,
 									})
 								end
-								wait(0.5)
+								task.wait(0.5)
 								for _, ElementInstance in pairs(Instances) do
 									ElementInstance.Header.Text = ElementSettings.Name
 								end
@@ -7910,12 +6946,12 @@ function EliteUI:CreateWindow(WindowSettings)
 					ElementSettings = {
 						Name = string,
 						Icon = number, **
-						
+
 						CurrentValue = number, **
-						Range = table{number, number}, 
+						Range = table{number, number},
 						Increment = number, **
 						HideMax = bool, **
-						
+
 						Callback = function(number),
 					}
 					]]
@@ -7985,7 +7021,6 @@ function EliteUI:CreateWindow(WindowSettings)
 								if not Success then
 									Element.Instance.Header.Text = "Callback Error"
 									warn(`EliteUI - Callback Error | {Element.Values.Name} ({Index})`)
-									print(Response)
 									if WindowSettings.NotifyOnCallbackError then
 										EliteUI:Notification({
 											Title = Element.Values.Name .. " Callback Error",
@@ -7993,7 +7028,7 @@ function EliteUI:CreateWindow(WindowSettings)
 											Icon = 129398364168201,
 										})
 									end
-									wait(0.5)
+									task.wait(0.5)
 									Element.Instance.Header.Text = ElementSettings.Name
 								end
 							end
@@ -8104,7 +7139,6 @@ function EliteUI:CreateWindow(WindowSettings)
 											warn(
 												`EliteUI - Callback Error | {Element.Values.Name} ({Index})`
 											)
-											print(Response)
 											if WindowSettings.NotifyOnCallbackError then
 												EliteUI:Notification({
 													Title = Element.Values.Name .. " Callback Error",
@@ -8112,7 +7146,7 @@ function EliteUI:CreateWindow(WindowSettings)
 													Icon = 129398364168201,
 												})
 											end
-											wait(0.5)
+											task.wait(0.5)
 											Element.Instance.Header.Text = ElementSettings.Name
 										end
 
@@ -8361,7 +7395,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					ElementSettings = {
 						Name = string,
 						Icon = number, **
-						
+
 						CurrentValue = string, **
 						PlaceholderText = string, **
 						RemoveTextAfterFocusLost = bool, **
@@ -8369,7 +7403,7 @@ function EliteUI:CreateWindow(WindowSettings)
 						Enter = bool, **
 						MaxCharacters = number, **
 						RemoveTextOnFocus = bool, **
-						
+
 						Callback = function(string),
 					}
 					]]
@@ -8405,7 +7439,6 @@ function EliteUI:CreateWindow(WindowSettings)
 								if not Success then
 									Element.Instance.Header.Text = "Callback Error"
 									warn(`EliteUI - Callback Error | {Element.Values.Name} ({Index})`)
-									print(Response)
 									if WindowSettings.NotifyOnCallbackError then
 										EliteUI:Notification({
 											Title = Element.Values.Name .. " Callback Error",
@@ -8413,7 +7446,7 @@ function EliteUI:CreateWindow(WindowSettings)
 											Icon = 129398364168201,
 										})
 									end
-									wait(0.5)
+									task.wait(0.5)
 									Element.Instance.Header.Text = ElementSettings.Name
 								end
 							end
@@ -8476,7 +7509,6 @@ function EliteUI:CreateWindow(WindowSettings)
 								if not Success then
 									Element.Instance.Header.Text = "Callback Error"
 									warn(`EliteUI - Callback Error | {Element.Values.Name} ({Index})`)
-									print(Response)
 									if WindowSettings.NotifyOnCallbackError then
 										EliteUI:Notification({
 											Title = Element.Values.Name .. " Callback Error",
@@ -8484,7 +7516,7 @@ function EliteUI:CreateWindow(WindowSettings)
 											Icon = 129398364168201,
 										})
 									end
-									wait(0.5)
+									task.wait(0.5)
 									Element.Instance.Header.Text = ElementSettings.Name
 								end
 							end
@@ -8596,7 +7628,6 @@ function EliteUI:CreateWindow(WindowSettings)
 							if not Success then
 								Element.Instance.Header.Text = "Callback Error"
 								warn(`EliteUI - Callback Error | {Element.Values.Name} ({Index})`)
-								print(Response)
 								if WindowSettings.NotifyOnCallbackError then
 									EliteUI:Notification({
 										Title = Element.Values.Name .. " Callback Error",
@@ -8604,7 +7635,7 @@ function EliteUI:CreateWindow(WindowSettings)
 										Icon = 129398364168201,
 									})
 								end
-								wait(0.5)
+								task.wait(0.5)
 								Element.Instance.Header.Text = ElementSettings.Name
 							end
 
@@ -8735,8 +7766,6 @@ function EliteUI:CreateWindow(WindowSettings)
 						end
 					end)
 
-					--// SUBSECTION : User Elements
-
 					function Element:AddBind(NestedSettings, NestedIndex, Parent, ParentIndex)
 						Parent = Parent or Element
 						local isToggle = Parent ~= Element
@@ -8746,9 +7775,9 @@ function EliteUI:CreateWindow(WindowSettings)
 						--[[
 						NestedSettings = {
 							HoldToInteract = bool, **
-							CurrentValue = string, 
+							CurrentValue = string,
 							SyncToggleState = bool, **
-							
+
 							Callback = function(bool), ****
 							OnChangedCallback = function(string), **
 						}
@@ -8895,7 +7924,6 @@ function EliteUI:CreateWindow(WindowSettings)
 													warn(
 														`EliteUI - Callback Error | {Element.Values.Name} ({Index} {NestedIndex})`
 													)
-													print(Response)
 													if WindowSettings.NotifyOnCallbackError then
 														EliteUI:Notification({
 															Title = Element.Values.Name .. " Callback Error",
@@ -8903,7 +7931,7 @@ function EliteUI:CreateWindow(WindowSettings)
 															Icon = 129398364168201,
 														})
 													end
-													wait(0.5)
+													task.wait(0.5)
 													Parent.Instance.Header.Text = ElementSettings.Name
 												end
 												NestedElement.Instance:ReleaseFocus()
@@ -8930,7 +7958,6 @@ function EliteUI:CreateWindow(WindowSettings)
 													warn(
 														`EliteUI - Callback Error | {Element.Values.Name} ({Index} {NestedIndex})`
 													)
-													print(Response)
 													if WindowSettings.NotifyOnCallbackError then
 														EliteUI:Notification({
 															Title = Element.Values.Name .. " Callback Error",
@@ -8938,7 +7965,7 @@ function EliteUI:CreateWindow(WindowSettings)
 															Icon = 129398364168201,
 														})
 													end
-													wait(0.5)
+													task.wait(0.5)
 													Parent.Instance.Header.Text = ElementSettings.Name
 												end
 												NestedElement.Instance:ReleaseFocus()
@@ -8977,7 +8004,6 @@ function EliteUI:CreateWindow(WindowSettings)
 													warn(
 														`EliteUI - Callback Error | {Element.Values.Name} ({Index} {NestedIndex})`
 													)
-													print(Response)
 													if WindowSettings.NotifyOnCallbackError then
 														EliteUI:Notification({
 															Title = Element.Values.Name .. " Callback Error",
@@ -8985,7 +8011,7 @@ function EliteUI:CreateWindow(WindowSettings)
 															Icon = 129398364168201,
 														})
 													end
-													wait(0.5)
+													task.wait(0.5)
 													Parent.Instance.Header.Text = ElementSettings.Name
 												end
 											elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
@@ -9003,7 +8029,6 @@ function EliteUI:CreateWindow(WindowSettings)
 													warn(
 														`EliteUI - Callback Error | {Element.Values.Name} ({Index} {NestedIndex})`
 													)
-													print(Response)
 													if WindowSettings.NotifyOnCallbackError then
 														EliteUI:Notification({
 															Title = Element.Values.Name .. " Callback Error",
@@ -9011,7 +8036,7 @@ function EliteUI:CreateWindow(WindowSettings)
 															Icon = 129398364168201,
 														})
 													end
-													wait(0.5)
+													task.wait(0.5)
 													Parent.Instance.Header.Text = ElementSettings.Name
 												end
 											end
@@ -9053,7 +8078,6 @@ function EliteUI:CreateWindow(WindowSettings)
 												warn(
 													`EliteUI - Callback Error | {Element.Values.Name} ({Index} {NestedIndex})`
 												)
-												print(response)
 												if WindowSettings.NotifyOnCallbackError then
 													EliteUI:Notification({
 														Title = Element.Values.Name .. " Callback Error",
@@ -9061,7 +8085,7 @@ function EliteUI:CreateWindow(WindowSettings)
 														Icon = 129398364168201,
 													})
 												end
-												wait(0.5)
+												task.wait(0.5)
 												Parent.Instance.Header.Text = ElementSettings.Name
 											end
 										else
@@ -9084,7 +8108,6 @@ function EliteUI:CreateWindow(WindowSettings)
 												warn(
 													`EliteUI - Callback Error | {Element.Values.Name} ({Index} {NestedIndex})`
 												)
-												print(response)
 												if WindowSettings.NotifyOnCallbackError then
 													EliteUI:Notification({
 														Title = Element.Values.Name .. " Callback Error",
@@ -9092,7 +8115,7 @@ function EliteUI:CreateWindow(WindowSettings)
 														Icon = 129398364168201,
 													})
 												end
-												wait(0.5)
+												task.wait(0.5)
 												Parent.Instance.Header.Text = ElementSettings.Name
 											end
 
@@ -9119,7 +8142,6 @@ function EliteUI:CreateWindow(WindowSettings)
 														warn(
 															`EliteUI - Callback Error | {Element.Values.Name} ({Index} {NestedIndex})`
 														)
-														print(response2)
 														if WindowSettings.NotifyOnCallbackError then
 															EliteUI:Notification({
 																Title = Element.Values.Name .. " Callback Error",
@@ -9127,7 +8149,7 @@ function EliteUI:CreateWindow(WindowSettings)
 																Icon = 129398364168201,
 															})
 														end
-														wait(0.5)
+														task.wait(0.5)
 														Parent.Instance.Header.Text = ElementSettings.Name
 													end
 												end
@@ -9149,7 +8171,6 @@ function EliteUI:CreateWindow(WindowSettings)
 								warn(
 									`EliteUI - Callback Error | {Element.Values.Name} ({Index} {NestedIndex})`
 								)
-								print(Response)
 								if WindowSettings.NotifyOnCallbackError then
 									EliteUI:Notification({
 										Title = Element.Values.Name .. " Callback Error",
@@ -9157,7 +8178,7 @@ function EliteUI:CreateWindow(WindowSettings)
 										Icon = 129398364168201,
 									})
 								end
-								wait(0.5)
+								task.wait(0.5)
 								Parent.Instance.Header.Text = ElementSettings.Name
 							end
 
@@ -9214,7 +8235,6 @@ function EliteUI:CreateWindow(WindowSettings)
 									warn(
 										`EliteUI - Callback Error | {Element.Values.Name} ({Index} {NestedIndex})`
 									)
-									print(Response)
 									if WindowSettings.NotifyOnCallbackError then
 										EliteUI:Notification({
 											Title = Element.Values.Name .. " Callback Error",
@@ -9222,7 +8242,7 @@ function EliteUI:CreateWindow(WindowSettings)
 											Icon = 129398364168201,
 										})
 									end
-									wait(0.5)
+									task.wait(0.5)
 									Parent.Instance.Header.Text = ElementSettings.Name
 								end
 
@@ -9244,7 +8264,7 @@ function EliteUI:CreateWindow(WindowSettings)
 						NestedSettings = {
 							CurrentValue = Color3,
 							Transparency = number, **
-							
+
 							Callback = function(Color3, number),
 						}
 						]]
@@ -9421,7 +8441,6 @@ function EliteUI:CreateWindow(WindowSettings)
 									warn(
 										`EliteUI - Callback Error | {Element.Values.Name} ({Index} {NestedIndex})`
 									)
-									print(Response)
 									if WindowSettings.NotifyOnCallbackError then
 										EliteUI:Notification({
 											Title = Element.Values.Name .. " Callback Error",
@@ -9429,7 +8448,7 @@ function EliteUI:CreateWindow(WindowSettings)
 											Icon = 129398364168201,
 										})
 									end
-									wait(0.5)
+									task.wait(0.5)
 									Parent.Instance.Header.Text = Element.Values.Name
 								end
 							end
@@ -10168,7 +9187,7 @@ function EliteUI:CreateWindow(WindowSettings)
 							CurrentOption = table/string,
 							MultipleOptions = bool,**
 							Special = number (1,2), **
-							
+
 							Callback = function(table),
 						}
 						]]
@@ -10365,8 +9384,6 @@ function EliteUI:CreateWindow(WindowSettings)
 								NestedElement.Values.CurrentOption = { NestedElement.Values.Options[1] }
 							end
 
-							--// SUBSECTION : display updation and methods
-
 							function NestedElement:truncate()
 								NestedElement.Instances[1].Header.Size = UDim2.new(1, -18, 0, 20)
 								if
@@ -10383,8 +9400,6 @@ function EliteUI:CreateWindow(WindowSettings)
 							NestedElement.Instances[1].Header:GetPropertyChangedSignal("Text"):Connect(function()
 								NestedElement:truncate()
 							end)
-
-							--// ENDSUBSECTION
 
 							local function Activate(option)
 								pcall(function()
@@ -10450,7 +9465,6 @@ function EliteUI:CreateWindow(WindowSettings)
 										warn(
 											`EliteUI - Callback Error | {Element.Values.Name} ({Index} {NestedIndex})`
 										)
-										print(Response)
 										if WindowSettings.NotifyOnCallbackError then
 											EliteUI:Notification({
 												Title = Element.Values.Name .. " Callback Error",
@@ -10458,7 +9472,7 @@ function EliteUI:CreateWindow(WindowSettings)
 												Icon = 129398364168201,
 											})
 										end
-										wait(0.5)
+										task.wait(0.5)
 										Parent.Instance.Header.Text = ElementSettings.Name
 									end
 								else
@@ -10482,7 +9496,6 @@ function EliteUI:CreateWindow(WindowSettings)
 										warn(
 											`EliteUI - Callback Error | {Element.Values.Name} ({Index} {NestedIndex})`
 										)
-										print(Response)
 										if WindowSettings.NotifyOnCallbackError then
 											EliteUI:Notification({
 												Title = Element.Values.Name .. " Callback Error",
@@ -10490,7 +9503,7 @@ function EliteUI:CreateWindow(WindowSettings)
 												Icon = 129398364168201,
 											})
 										end
-										wait(0.5)
+										task.wait(0.5)
 										Parent.Instance.Header.Text = ElementSettings.Name
 									end
 								end
@@ -10732,8 +9745,6 @@ function EliteUI:CreateWindow(WindowSettings)
 						return NestedElement
 					end
 
-					--// ENDSUBSECTION
-
 					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[Index] = Element
 					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[Index]
 				end
@@ -10836,8 +9847,6 @@ function EliteUI:CreateWindow(WindowSettings)
 					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[Index]
 				end
 
-				--// ENDSUBSECTION
-
 				Groupbox.Instance.Parent = Tab.Instances.Page["Column_" .. GroupboxSettings.Column]
 				EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex] = Groupbox
 				return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex]
@@ -10906,7 +9915,6 @@ function EliteUI:CreateWindow(WindowSettings)
 				for _, v in pairs(customThemes) do
 					table.insert(themesArray, v)
 				end
-
 
 				local colorpickers = {}
 				do
@@ -12018,8 +11026,6 @@ function EliteUI:CreateWindow(WindowSettings)
 				}, "__prebuiltConfigDeleter")
 			end
 
-			--// ENDSUBSECTION
-
 			Tab.Instances.Button.Parent = EliteUI.Window.TabSections[Name].Instance
 			EliteUI.Window.TabSections[Name].Tabs[TabIndex] = Tab
 			return EliteUI.Window.TabSections[Name].Tabs[TabIndex]
@@ -12029,13 +11035,9 @@ function EliteUI:CreateWindow(WindowSettings)
 		EliteUI.Window.TabSections[Name] = TabSection
 		return EliteUI.Window.TabSections[Name]
 
-		--// ENDSUBSECTION
-	end
+			end
 
-	--// ENDSUBSECTION
-
-	--// SUBSECTION : Window Functionability
-	do
+		do
 		mainWindow.Content.Topbar.NotificationCenterIcon["MouseEnter"]:Connect(function()
 			Tween(
 				mainWindow.Content.Topbar.NotificationCenterIcon,
@@ -12096,7 +11098,6 @@ function EliteUI:CreateWindow(WindowSettings)
 							TweenInfo.new(0.3, Enum.EasingStyle.Exponential),
 							{ TextTransparency = 1 }
 						):Play()
-
 
 						TweenService:Create(
 							newNotification,
@@ -12337,7 +11338,6 @@ function EliteUI:CreateWindow(WindowSettings)
 			end
 		end)
 	end
-	--// ENDSUBSECTION
 
 	-- Hook window state persistence (auto-save on move/resize/theme change)
 	-- and load any saved state (position, size, theme, transparency)
@@ -12358,8 +11358,6 @@ function EliteUI:CreateWindow(WindowSettings)
 	-- Return the window
 	return EliteUI.Window
 end
-
---// SECTION : Config System
 
 function EliteUI.FileSystem:BuildFolderTree(FileSettings)
 	-- Revamp since beta 4 since we are storing stuff within like scripts for both themes and such
@@ -12619,8 +11617,6 @@ function EliteUI:LoadAutoloadTheme()
 	end
 end
 
---// ENDSECTION
-
 -- ============================================================
 -- WINDOW STATE PERSISTENCE (per-game save/restore)
 -- ============================================================
@@ -12762,7 +11758,6 @@ do
 			end
 		end)
 
-
 		return state
 	end
 
@@ -12893,10 +11888,6 @@ end
 
 EliteUIInstance.Enabled = true
 
---// ENDSECTION
-
-
-
 -- ============================================================
 -- RAYFIELD-COMPATIBLE API WRAPPER
 -- ============================================================
@@ -12925,29 +11916,29 @@ end
 
 function Rayfield:CreateWindow(Settings)
     Settings = Settings or {}
-    
+
     local eliteSettings = {
         Name = Settings.Name or "Elite Level Scripts",
         Subtitle = Settings.LoadingSubtitle or Settings.Subtitle or "",
         Icon = Settings.Icon or nil,
-        
+
         LoadingEnabled = Settings.LoadingEnabled or (Settings.LoadingTitle ~= nil),
         LoadingSettings = {
             Title = Settings.LoadingTitle or Settings.Name or "Elite Level Scripts",
             Subtitle = Settings.LoadingSubtitle or "Loading...",
             Logo = Settings.LoadingLogo or Settings.Logo or nil,
         },
-        
+
         BuildWarnings = false,
         InterfaceAdvertisingPrompts = false,
         NotifyOnCallbackError = true,
-        
+
         DefaultSize = Settings.DefaultSize or nil,
-        
+
         KeySystem = Settings.KeySystem or { Enabled = false },
         Discord = Settings.Discord or { Enabled = false },
     }
-    
+
     -- Map Rayfield ConfigurationSaving to EliteUI FileSettings
     if Settings.ConfigurationSaving and Settings.ConfigurationSaving.Enabled then
         eliteSettings.FileSettings = {
@@ -12956,7 +11947,7 @@ function Rayfield:CreateWindow(Settings)
     end
     -- When ConfigurationSaving is disabled or missing, don't pass FileSettings
     -- This avoids BuildFolderTree trying to create folders with nil paths
-    
+
     -- Apply theme if provided
     if Settings.Theme then
         if type(Settings.Theme) == "string" then
@@ -12972,19 +11963,19 @@ function Rayfield:CreateWindow(Settings)
             end)
         end
     end
-    
+
     -- Create the actual window
     EliteUI:CreateWindow(eliteSettings)
-    
+
     -- Create a default tab section for Rayfield-style flat tab creation
     local defaultSection = EliteUI.Window:CreateTabSection()
-    
+
     -- Build the Window wrapper with Rayfield-compatible methods
     local WindowWrapper = {}
     WindowWrapper._section = defaultSection
     WindowWrapper._sectionCount = 0
     WindowWrapper._sections = { [""] = defaultSection }
-    
+
     -- ════════════════════════════════════════════
     -- Window:CreateTab(Name, Icon)
     -- ════════════════════════════════════════════
@@ -12992,12 +11983,12 @@ function Rayfield:CreateWindow(Settings)
     -- EliteUI: TabSection:CreateTab({Name, Columns, Icon}, TabIndex)
     -- Icons are now handled natively by EliteUI's setIcon() function
     -- which loads Rayfield's Lucide icon library at startup.
-    
+
     function WindowWrapper:CreateTab(Name, Icon, Settings)
         -- Support both Rayfield styles:
         -- CreateTab("Name", "icon") and CreateTab({Name = "Name", Icon = "icon"})
         local tabName, tabIcon, tabColumns
-        
+
         if type(Name) == "table" then
             tabName = Name.Name or "Tab"
             tabIcon = Name.Icon or ""
@@ -13007,21 +11998,21 @@ function Rayfield:CreateWindow(Settings)
             tabIcon = Icon or ""
             tabColumns = (Settings and Settings.Columns) or 1
         end
-        
+
         local tabIndex = nextIndex("tab")
-        
+
         local nativeTab = defaultSection:CreateTab({
             Name = tabName,
             Columns = tabColumns,
             Icon = tabIcon,
         }, tabIndex)
-        
+
         -- Build the Tab wrapper with Rayfield-compatible methods
         local TabWrapper = {}
         TabWrapper._native = nativeTab
         TabWrapper._autoGroupbox = nil
         TabWrapper._currentSection = nil
-        
+
         -- Auto-create a default groupbox for elements added without a section
         local function ensureGroupbox()
             if TabWrapper._autoGroupbox == nil then
@@ -13033,7 +12024,7 @@ function Rayfield:CreateWindow(Settings)
             end
             return TabWrapper._autoGroupbox
         end
-        
+
         -- ════════════════════════════════════════════
         -- Rayfield-compatible :Set() wrappers
         -- ════════════════════════════════════════════
@@ -13136,20 +12127,20 @@ function Rayfield:CreateWindow(Settings)
         -- EliteUI: Tab:CreateGroupbox({Name, Column, Style}, Index)
         -- In Rayfield, CreateSection returns the section object which has element creation methods.
         -- Elements are added to the LAST created section.
-        
+
         function TabWrapper:CreateSection(SectionName, Column)
             local groupbox = nativeTab:CreateGroupbox({
                 Name = SectionName or "",
                 Column = Column or 1,
                 Style = 1,
             }, nextIndex("sec"))
-            
+
             TabWrapper._currentSection = groupbox
-            
+
             -- Build a Section wrapper
             local SectionWrapper = {}
             SectionWrapper._native = groupbox
-            
+
             -- Forward all element creation to this groupbox with Rayfield-compat Set()
             local wrapSetMap = {
                 Button = wrapButtonSet, Toggle = wrapToggleSet,
@@ -13164,18 +12155,18 @@ function Rayfield:CreateWindow(Settings)
                     return wrapper and wrapper(el) or el
                 end
             end
-            
+
             wrapElement("Button")
             wrapElement("Toggle")
             wrapElement("Slider")
             wrapElement("Input")
             wrapElement("Label")
             wrapElement("Paragraph")
-            
+
             function SectionWrapper:CreateDivider()
                 return groupbox:CreateDivider()
             end
-            
+
             -- Dropdown in Rayfield is typically on a Label
             function SectionWrapper:CreateDropdown(ElementSettings, Flag)
                 local idx = Flag or nextIndex("dropdown")
@@ -13203,7 +12194,7 @@ function Rayfield:CreateWindow(Settings)
                 end
                 return wrapDropdownSet(dd)
             end
-            
+
             -- Keybind in Rayfield
             function SectionWrapper:CreateKeybind(ElementSettings, Flag)
                 local idx = Flag or nextIndex("bind")
@@ -13216,7 +12207,7 @@ function Rayfield:CreateWindow(Settings)
                     Callback = ElementSettings.Callback or function() end,
                 }, idx)
             end
-            
+
             -- ColorPicker in Rayfield
             function SectionWrapper:CreateColorPicker(ElementSettings, Flag)
                 local idx = Flag or nextIndex("cp")
@@ -13229,17 +12220,17 @@ function Rayfield:CreateWindow(Settings)
                     Callback = ElementSettings.Callback or function() end,
                 }, idx)
             end
-            
+
             return SectionWrapper
         end
-        
+
         -- ════════════════════════════════════════════
         -- Direct element creation on Tab (Rayfield style)
         -- ════════════════════════════════════════════
         -- In Rayfield, you can create elements directly on a tab
         -- without explicitly creating a section first.
         -- We handle this by auto-creating a default groupbox.
-        
+
         local function getActiveGroupbox()
             return TabWrapper._currentSection or ensureGroupbox()
         end
@@ -13248,22 +12239,22 @@ function Rayfield:CreateWindow(Settings)
             local gb = getActiveGroupbox()
             return wrapButtonSet(gb:CreateButton(ElementSettings, Flag or nextIndex("btn")))
         end
-        
+
         function TabWrapper:CreateToggle(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             return wrapToggleSet(gb:CreateToggle(ElementSettings, Flag or nextIndex("tgl")))
         end
-        
+
         function TabWrapper:CreateSlider(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             return wrapSliderSet(gb:CreateSlider(ElementSettings, Flag or nextIndex("sld")))
         end
-        
+
         function TabWrapper:CreateInput(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             return wrapInputSet(gb:CreateInput(ElementSettings, Flag or nextIndex("inp")))
         end
-        
+
         function TabWrapper:CreateDropdown(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             local idx = Flag or nextIndex("dropdown")
@@ -13290,7 +12281,7 @@ function Rayfield:CreateWindow(Settings)
             end
             return wrapDropdownSet(dd)
         end
-        
+
         function TabWrapper:CreateKeybind(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             local idx = Flag or nextIndex("bind")
@@ -13303,7 +12294,7 @@ function Rayfield:CreateWindow(Settings)
                 Callback = ElementSettings.Callback or function() end,
             }, idx)
         end
-        
+
         function TabWrapper:CreateColorPicker(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             local idx = Flag or nextIndex("cp")
@@ -13316,7 +12307,7 @@ function Rayfield:CreateWindow(Settings)
                 Callback = ElementSettings.Callback or function() end,
             }, idx)
         end
-        
+
         function TabWrapper:CreateLabel(NameOrSettings, Flag)
             local gb = getActiveGroupbox()
             local settings
@@ -13327,29 +12318,29 @@ function Rayfield:CreateWindow(Settings)
             end
             return wrapLabelSet(gb:CreateLabel(settings, Flag or nextIndex("lbl")))
         end
-        
+
         function TabWrapper:CreateParagraph(ElementSettings, Flag)
             local gb = getActiveGroupbox()
             return gb:CreateParagraph(ElementSettings, Flag or nextIndex("para"))
         end
-        
+
         function TabWrapper:CreateDivider()
             local gb = getActiveGroupbox()
             return gb:CreateDivider()
         end
-        
+
         -- ════════════════════════════════════════════
         -- Direct EliteUI access (for power users)
         -- ════════════════════════════════════════════
-        
+
         function TabWrapper:CreateGroupbox(Settings, Index)
             return nativeTab:CreateGroupbox(Settings, Index or nextIndex("grp"))
         end
-        
+
         function TabWrapper:BuildConfigGroupbox(Column, Style)
             return nativeTab:BuildConfigGroupbox(Column, Style)
         end
-        
+
         function TabWrapper:BuildThemeGroupbox(Column, Style)
             return nativeTab:BuildThemeGroupbox(Column, Style)
         end
@@ -13670,21 +12661,21 @@ function Rayfield:CreateWindow(Settings)
 
         return DashTab
     end
-    
+
     -- ════════════════════════════════════════════
     -- Window:CreateTabSection(Name) - for advanced users
     -- ════════════════════════════════════════════
     function WindowWrapper:CreateTabSection(Name, Visible)
         return EliteUI.Window:CreateTabSection(Name, Visible)
     end
-    
+
     -- ════════════════════════════════════════════
     -- Window:PromptDialog(Settings) - passthrough
     -- ════════════════════════════════════════════
     function WindowWrapper:PromptDialog(Settings)
         return EliteUI.Window:PromptDialog(Settings)
     end
-    
+
     Rayfield._window = WindowWrapper
     return WindowWrapper
 end
@@ -14521,7 +13512,6 @@ function Rayfield:CreateSubWindow(settings)
                 infoLabel.Parent=infoRow
                 ThemeMethods.bindTheme(infoLabel,"TextColor3","Foregrounds.Active")
 
-
                 -- Button row
                 local btnRow = Instance.new("Frame")
                 btnRow.Size=UDim2.new(1,0,0,btnBarH); btnRow.Position=UDim2.new(0,0,1,-btnBarH)
@@ -14597,7 +13587,6 @@ function Rayfield:CreateSubWindow(settings)
                         end)
                     end
                 end
-
 
             end
 
@@ -14779,6 +13768,5 @@ function Rayfield:CreateSubWindow(settings)
 
     return SubWindowWrapper
 end
-
 
 return Rayfield
