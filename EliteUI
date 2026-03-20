@@ -22,7 +22,7 @@
 
 ]]
 
-local Release = "v3.44"
+local Release = "v3.45"
 local debugV = false
 
 local EliteUI = {
@@ -3507,6 +3507,11 @@ end
 -- Interface Model
 local modelId = debugV and 136653172778765 or 90058405618888
 
+-- Brief wait before first fetch — gives Roblox's asset CDN time to fully
+-- cache the model. Without this, a partial model can be returned when the
+-- script runs after a delay (e.g. after KeyScreen validation).
+if not isStudio then task.wait(0.5) end
+
 local EliteUIInstance: ScreenGui = isStudio and script.Parent:WaitForChild("EliteUI V1")
 	or game:GetObjects("rbxassetid://" .. modelId)[1]
 local buildAttempts = 0
@@ -3523,6 +3528,8 @@ local function modelIsValid(inst)
 	if not res:FindFirstChild("Elements") then return false end
 	local mw = inst.MainWindow
 	if not mw:FindFirstChild("Content") then return false end
+	local cm = mw.Content:FindFirstChild("ContentMain")
+	if not cm then return false end
 	return true
 end
 
@@ -6391,7 +6398,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					--]]
 
 					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
-					ElementSettings.InitialCallback = ElementSettings.InitialCallback or true
+					ElementSettings.InitialCallback = ElementSettings.InitialCallback or false
 					ElementSettings.CurrentValue = ElementSettings.CurrentValue or false
 
 					local Element = {
@@ -6512,7 +6519,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					]]
 
 					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
-					ElementSettings.InitialCallback = ElementSettings.InitialCallback or true
+					ElementSettings.InitialCallback = ElementSettings.InitialCallback or false
 					ElementSettings.CurrentValue = ElementSettings.CurrentValue or false
 
 					local Element = {
