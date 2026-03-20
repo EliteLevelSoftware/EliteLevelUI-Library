@@ -22,7 +22,7 @@
 
 ]]
 
-local Release = "v3.45"
+local Release = "v3.46"
 local debugV = false
 
 local EliteUI = {
@@ -3662,6 +3662,9 @@ local navigation: Frame = mainWindow.Sidebar.Navigation
 local tabs: Frame = mainWindow.Content.ContentMain.Elements
 local Resizing = false
 local ResizeType = nil
+-- Set true when CreateWindow completes — guards Notification() against
+-- being called during construction (e.g. from locked element InitialCallbacks)
+local _windowReady = false
 
 local GUICanvasSize = { X = Camera.ViewportSize.X, Y = Camera.ViewportSize.Y - GuiInset }
 
@@ -3733,14 +3736,9 @@ EliteUIInstance.Destroying:Connect(function()
 end)
 
 function EliteUI:Notification(data)
-	--[[
-	NotificationSettings = {
-		Title = string,
-		Content = string,
-		Icon = number, **
-		Duration = number, **
-	}
-	]]
+	-- Guard: silently drop notifications fired before CreateWindow completes.
+	-- This happens when locked element InitialCallbacks fire during construction.
+	if not _windowReady then return end
 
 	task.spawn(function()
 		local creationTime = tick()
@@ -4814,6 +4812,8 @@ function EliteUI:CreateWindow(WindowSettings)
 
 		--if not WindowSettings.LoadingEnabled then task.wait(.15) end
 	end
+
+	_windowReady = true
 
 	function EliteUI.Window:PromptDialog(ModalSettings)
 		--[[
@@ -6398,7 +6398,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					--]]
 
 					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
-					ElementSettings.InitialCallback = ElementSettings.InitialCallback or false
+					ElementSettings.InitialCallback = ElementSettings.InitialCallback or true
 					ElementSettings.CurrentValue = ElementSettings.CurrentValue or false
 
 					local Element = {
@@ -6519,7 +6519,7 @@ function EliteUI:CreateWindow(WindowSettings)
 					]]
 
 					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
-					ElementSettings.InitialCallback = ElementSettings.InitialCallback or false
+					ElementSettings.InitialCallback = ElementSettings.InitialCallback or true
 					ElementSettings.CurrentValue = ElementSettings.CurrentValue or false
 
 					local Element = {
