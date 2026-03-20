@@ -22,7 +22,7 @@
 
 ]]
 
-local Release = "v3.41"
+local Release = "v3.42"
 local debugV = false
 
 local EliteUI = {
@@ -3724,6 +3724,17 @@ function EliteUI:Notification(data)
 
 	task.spawn(function()
 		local creationTime = tick()
+
+		-- Guard: Resources and Notifications may not be ready if Notify is called
+		-- during UI construction (e.g. from locked element InitialCallbacks)
+		local waited = 0
+		while (not Resources or not Resources:FindFirstChild("Elements") or not EliteUIInstance.Notifications) and waited < 5 do
+			task.wait(0.05)
+			waited = waited + 0.05
+		end
+		if not Resources or not Resources:FindFirstChild("Elements") or not EliteUIInstance.Notifications then
+			return
+		end
 
 		-- Notification Object Creation
 		local newNotification = Resources.Elements.NotificationTemplate:Clone()
