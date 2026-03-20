@@ -22,7 +22,7 @@
 
 ]]
 
-local Release = "v3.40"
+local Release = "v3.41"
 local debugV = false
 
 local EliteUI = {
@@ -3512,11 +3512,25 @@ local EliteUIInstance: ScreenGui = isStudio and script.Parent:WaitForChild("Elit
 local buildAttempts = 0
 local correctBuild = false
 
-if EliteUIInstance.Resources:FindFirstChild("Build")
-	and EliteUIInstance.Resources.Build.Value == EliteUI.InterfaceBuild
-then
-	correctBuild = true
-end
+repeat
+	if EliteUIInstance.Resources:FindFirstChild("Build")
+		and EliteUIInstance.Resources.Build.Value == EliteUI.InterfaceBuild
+	then
+		correctBuild = true
+		break
+	end
+
+	local toDestroy
+	toDestroy, EliteUIInstance =
+		EliteUIInstance,
+		isStudio and script.Parent:FindFirstChild("EliteUI V1") or game:GetObjects("rbxassetid://" .. modelId)[1]
+	if toDestroy and not isStudio then
+		toDestroy:Destroy()
+	end
+
+	buildAttempts += 1
+
+until buildAttempts >= 2
 
 if not correctBuild then
 	warn("[EliteUI] Build mismatch — expected " .. tostring(EliteUI.InterfaceBuild)
@@ -6171,6 +6185,843 @@ function EliteUI:CreateWindow(WindowSettings)
 					end
 					Groupbox = nil
 				end
+
+				--[=[
+
+				function Groupbox:CreatePrimaryButton(ElementSettings) -- these will be merged in the next update where we allow style changing.
+
+					--[[
+					ElementSettings = {
+						Name = string,
+						Icon = number, **
+						ImageSource = string, **
+
+						Callback = function(nil),
+					}
+					-]]
+
+					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
+
+					local Element = {
+						Values = ElementSettings
+					}
+
+					Element.Instance = GroupboxTemplateInstance["Button_TEMPLATE_Style1"]:Clone()
+					Element.Instance.Visible = true
+					Element.Instance["PART_Backdrop"].DropShadowHolder.DropShadow.ImageTransparency = 1
+					Element.Instance.Parent = Groupbox.ParentingItem
+
+					Element.Instance.Name = "BUTTON_" .. ElementSettings.Name
+					Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
+					Element.Instance["PART_Backdrop"].Header.Icon.Visible = ElementSettings.Icon ~= nil
+					if Element.Instance["PART_Backdrop"].Header.Icon.Visible == false then
+						Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,6)
+					else
+						Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,32)
+					end
+					Element.Instance["PART_Backdrop"].Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
+
+					function Element:Set(NewElementSettings)
+						for i,v in pairs(ElementSettings) do
+							if NewElementSettings[i] == nil then
+								NewElementSettings[i] = v
+							end
+						end
+
+						ElementSettings = NewElementSettings
+
+						Element.Values = ElementSettings
+						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = ElementSettings
+
+						Element.Instance.Name = "BUTTON_" .. ElementSettings.Name
+						Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
+						Element.Instance["PART_Backdrop"].Header.Icon.Visible = ElementSettings.Icon ~= nil
+						if Element.Instance["PART_Backdrop"].Header.Icon.Visible == false then
+							Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,6)
+						else
+							Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,32)
+						end
+						Element.Instance["PART_Backdrop"].Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
+						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name].Values = ElementSettings
+					end
+
+					function Element:Destroy()
+						Element.Instance:Destroy()
+					end
+
+					Element.Instance.MouseEnter:Connect(function()
+						Tween(Element.Instance["PART_Backdrop"].DropShadowHolder.DropShadow, {ImageTransparency = 0.73})
+					end)
+
+					Element.Instance.MouseLeave:Connect(function()
+						Tween(Element.Instance["PART_Backdrop"].DropShadowHolder.DropShadow, {ImageTransparency = 1})
+
+						if Element.Instance["PART_Backdrop"].AccentBrighter.Enabled == true then
+							Element.Instance["PART_Backdrop"].AccentBrighter.Enabled = false
+							Element.Instance["PART_Backdrop"].Accent.Enabled = true
+						end
+					end)
+
+					Element.Instance.Interact.MouseButton1Click:Connect(function()
+						local Success,Response = pcall(Element.Values.Callback)
+
+						if not Success then
+							Element.Instance["PART_Backdrop"].Header.Text = "Callback Error"
+							warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
+							task.wait(0.5)
+							Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
+						end
+					end)
+
+					Element.Instance.Interact.MouseButton1Down:Connect(function()
+						Element.Instance["PART_Backdrop"].AccentBrighter.Enabled = true
+						Element.Instance["PART_Backdrop"].Accent.Enabled = false
+					end)
+
+					Element.Instance.Interact.MouseButton1Up:Connect(function()
+						Element.Instance["PART_Backdrop"].AccentBrighter.Enabled = false
+						Element.Instance["PART_Backdrop"].Accent.Enabled = true
+					end)
+
+					if GroupboxSettings.Style == 2 then
+						Groupbox.Instance["PART_Backdrop"].Size = UDim2.new(1,0,0, Groupbox.Instance["PART_Backdrop"].AbsoluteSize.Y)
+					end
+
+					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = Element
+					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
+				end
+
+				function Groupbox:CreateSecondaryButton(ElementSettings) -- these will be merged in the next update where we allow style changing.
+					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
+
+					local Element = {
+						Values = ElementSettings
+					}
+
+					Element.Instance = GroupboxTemplateInstance["Button_TEMPLATE_Style2"]:Clone()
+					Element.Instance.Visible = true
+					Element.Instance.Parent = Groupbox.ParentingItem
+
+					Element.Instance.Name = "BUTTON_" .. ElementSettings.Name
+					Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
+					Element.Instance["PART_Backdrop"].Header.Icon.Visible = ElementSettings.Icon ~= nil
+					if Element.Instance["PART_Backdrop"].Header.Icon.Visible == false then
+						Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,6)
+					else
+						Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,32)
+					end
+					Element.Instance["PART_Backdrop"].Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
+
+					function Element:Set(NewElementSettings)
+						for i,v in pairs(ElementSettings) do
+							if NewElementSettings[i] == nil then
+								NewElementSettings[i] = v
+							end
+						end
+
+						ElementSettings = NewElementSettings
+
+						Element.Values = ElementSettings
+						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = ElementSettings
+
+						Element.Instance.Name = "BUTTON_" .. ElementSettings.Name
+						Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
+						Element.Instance["PART_Backdrop"].Header.Icon.Visible = ElementSettings.Icon ~= nil
+						if Element.Instance["PART_Backdrop"].Header.Icon.Visible == false then
+							Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,6)
+						else
+							Element.Instance["PART_Backdrop"].Header.UIPadding.PaddingLeft = UDim.new(0,32)
+						end
+						Element.Instance["PART_Backdrop"].Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
+						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name].Values = ElementSettings
+					end
+
+					function Element:Destroy()
+						Element.Instance:Destroy()
+					end
+
+					Element.Instance.MouseEnter:Connect(function()
+						Tween(Element.Instance["PART_Backdrop"], {BackgroundColor3 = Color3.fromRGB(31, 33, 38)})
+					end)
+
+					Element.Instance.MouseLeave:Connect(function()
+						Tween(Element.Instance["PART_Backdrop"], {BackgroundColor3 = Color3.fromRGB(27, 29, 34)})
+					end)
+
+					Element.Instance.Interact.MouseButton1Click:Connect(function()
+						local Success,Response = pcall(ElementSettings.Callback)
+
+						if not Success then
+							Element.Instance["PART_Backdrop"].Header.Text = "Callback Error"
+							warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
+							task.wait(0.5)
+							Element.Instance["PART_Backdrop"].Header.Text = ElementSettings.Name
+						end
+					end)
+
+					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = Element
+					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
+				end
+
+				function Groupbox:CreateCheckbox(ElementSettings) -- will be merged with switch in next update via styles. adding a checkbox icon soon
+
+					--[[
+					ElementSettings = {
+						Name = string,
+						Icon = number, **
+						ImageSource = string, **
+						InitialCallback = bool, **
+						CurrentValue = bool, **
+
+						Callback = function(bool),
+					}
+					--]]
+
+					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
+					ElementSettings.InitialCallback = ElementSettings.InitialCallback or true
+					ElementSettings.CurrentValue = ElementSettings.CurrentValue or false
+
+					local Element = {
+						Values = ElementSettings,
+					}
+
+					Element.Instance = GroupboxTemplateInstance.Checkbox_TEMPLATE_Disabled:Clone()
+					Element.Instance.Visible = true
+					Element.Instance.Parent = Groupbox.ParentingItem
+
+					Element.Instance.Name = "CHECKBOX_" .. ElementSettings.Name
+					Element.Instance.Header.Text = ElementSettings.Name
+					Element.Instance.Header.Icon.Visible = ElementSettings.Icon ~= nil
+					if Element.Instance.Header.Icon.Visible == false then
+						Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,6)
+					else
+						Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,32)
+					end
+					Element.Instance.Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
+
+					local function Set(bool)
+						if bool then
+							Tween(Element.Instance.Checkbox, {BackgroundTransparency = 0})
+						else
+							Tween(Element.Instance.Checkbox, {BackgroundTransparency = 0.9})
+						end
+
+						Element.Values.CurrentValue = bool
+					end
+
+					--starting
+					do
+						Set(Element.Values.CurrentValue)
+						if ElementSettings.InitialCallback then
+							local Success,Response = pcall(function()
+								ElementSettings.Callback(Element.Values.CurrentValue)
+							end)
+
+							if not Success then
+								Element.Instance.Header.Text = "Callback Error"
+								warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
+								task.wait(0.5)
+								Element.Instance.Header.Text = ElementSettings.Name
+							end
+						end
+					end
+
+					Element.Instance.Checkbox.MouseEnter:Connect(function()
+						Element.Instance.Checkbox.AccentBrighter.Enabled = true
+						Element.Instance.Checkbox.Accent.Enabled = false
+					end)
+
+					Element.Instance.Checkbox.MouseLeave:Connect(function()
+						Element.Instance.Checkbox.AccentBrighter.Enabled = false
+						Element.Instance.Checkbox.Accent.Enabled = true
+					end)
+
+					Element.Instance.Checkbox.Interact.MouseButton1Click:Connect(function()
+						Element.Values.CurrentValue = not Element.Values.CurrentValue
+						Set(Element.Values.CurrentValue)
+
+						local Success,Response = pcall(function()
+							Element.Values.Callback(Element.Values.CurrentValue)
+						end)
+
+						if not Success then
+							Element.Instance.Header.Text = "Callback Error"
+							warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
+							task.wait(0.5)
+							Element.Instance.Header.Text = ElementSettings.Name
+						end
+					end)
+
+					function Element:Set(NewElementSettings)
+						for i,v in pairs(ElementSettings) do
+							if NewElementSettings[i] == nil then
+								NewElementSettings[i] = v
+							end
+						end
+
+						ElementSettings = NewElementSettings
+
+						Element.Values = ElementSettings
+
+						Element.Instance.Name = "CHECKBOX_" .. ElementSettings.Name
+						Element.Instance.Header.Text = ElementSettings.Name
+						Element.Instance.Header.Icon.Visible = ElementSettings.Icon ~= nil
+						if Element.Instance.Header.Icon.Visible == false then
+							Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,6)
+						else
+							Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,32)
+						end
+						Element.Instance.Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
+
+						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name].Values = ElementSettings
+					end
+
+					function Element:Destroy()
+						Element.Instance:Destroy()
+					end
+
+					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = Element
+					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
+				end
+
+				function Groupbox:CreateSwitch(ElementSettings)
+
+					--[[
+					ElementSettings = {
+						Name = string,
+						Icon = number, **
+						ImageSource = string, **
+						InitialCallback = bool, **
+						CurrentValue = bool, **
+
+						Callback = function(bool),
+					}
+					]]
+
+					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
+					ElementSettings.InitialCallback = ElementSettings.InitialCallback or true
+					ElementSettings.CurrentValue = ElementSettings.CurrentValue or false
+
+					local Element = {
+						Values = ElementSettings,
+					}
+
+					Element.Instance = GroupboxTemplateInstance.Switch_TEMPLATE_Disabled:Clone()
+					Element.Instance.Visible = true
+					Element.Instance.Parent = Groupbox.ParentingItem
+
+					Element.Instance.Name = "SWITCH_" .. ElementSettings.Name
+					Element.Instance.Header.Text = ElementSettings.Name
+					Element.Instance.Header.Icon.Visible = ElementSettings.Icon ~= nil
+					if Element.Instance.Header.Icon.Visible == false then
+						Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,6)
+					else
+						Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,32)
+					end
+					Element.Instance.Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
+
+					local function Set(bool)
+						if bool then
+							Tween(Element.Instance.Switch, {BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(255,255,255)})
+							Tween(Element.Instance.Switch.Knob, {Position = UDim2.new(0,20,.5,0), BackgroundColor3 = Color3.fromRGB(255,255,255), BackgroundTransparency = 0})
+							Tween(Element.Instance.Switch.UIStroke, {Color = Color3.fromRGB(255,255,255)})
+							Tween(Element.Instance.Switch.DropShadowHolder.DropShadow, {ImageTransparency = 0})
+							Element.Instance.Switch.Accent.Enabled = true
+							Element.Instance.Switch.UIStroke.Accent.Enabled = true
+						else
+							Tween(Element.Instance.Switch, {BackgroundTransparency = 1, BackgroundColor3 = Color3.fromRGB(165,165,165)})
+							Tween(Element.Instance.Switch.Knob, {Position = UDim2.new(0,0,.5,0), BackgroundColor3 = Color3.fromRGB(165,165,165), BackgroundTransparency = 0.5})
+							Tween(Element.Instance.Switch.UIStroke, {Color = Color3.fromRGB(165,165,165)})
+							Tween(Element.Instance.Switch.DropShadowHolder.DropShadow, {ImageTransparency = 1})
+							Element.Instance.Switch.Accent.Enabled = false
+							Element.Instance.Switch.UIStroke.Accent.Enabled = false
+						end
+
+						Element.Values.CurrentValue = bool
+					end
+
+					--starting
+					do
+						Set(Element.Values.CurrentValue)
+						if ElementSettings.InitialCallback then
+							local Success,Response = pcall(function()
+								ElementSettings.Callback(Element.Values.CurrentValue)
+							end)
+
+							if not Success then
+								Element.Instance.Header.Text = "Callback Error"
+								warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
+								task.wait(0.5)
+								Element.Instance.Header.Text = ElementSettings.Name
+							end
+						end
+					end
+
+					Element.Instance.Switch.Interact.MouseButton1Click:Connect(function()
+						Element.Values.CurrentValue = not Element.Values.CurrentValue
+						Set(Element.Values.CurrentValue)
+
+						local Success,Response = pcall(function()
+							ElementSettings.Callback(Element.Values.CurrentValue)
+						end)
+
+						if not Success then
+							Element.Instance.Header.Text = "Callback Error"
+							warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
+							task.wait(0.5)
+							Element.Instance.Header.Text = ElementSettings.Name
+						end
+					end)
+
+					function Element:Set(NewElementSettings)
+						for i,v in pairs(ElementSettings) do
+							if NewElementSettings[i] == nil then
+								NewElementSettings[i] = v
+							end
+						end
+
+						ElementSettings = NewElementSettings
+
+						Element.Values = ElementSettings
+
+						Element.Instance.Name = "SWITCH_" .. ElementSettings.Name
+						Element.Instance.Header.Text = ElementSettings.Name
+						Element.Instance.Header.Icon.Visible = ElementSettings.Icon ~= nil
+						if Element.Instance.Header.Icon.Visible == false then
+							Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,6)
+						else
+							Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,32)
+						end
+						Element.Instance.Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
+
+						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name].Values = ElementSettings
+					end
+
+					function Element:Destroy()
+						Element.Instance:Destroy()
+					end
+
+					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = Element
+					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
+				end
+
+				-- element creation logic
+				function Groupbox:CreateDropdown(ElementSettings)
+
+					--[[
+					ElementSettings = {
+						Name = string,
+						Icon = number, **
+						ImageSource = string, **
+						Options = table, {string ...}
+						CurrentOption = table/string, {string ...} **
+						MultipleOptions = bool, **
+						Special = number, ** -- 0/nil for none, 1 for Player, 2 for Teams, more hopefully coming soon
+
+						Callback = function(table)
+					}
+					]]
+
+					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
+					ElementSettings.CurrentOption = ElementSettings.CurrentOption or ({ElementSettings.Options[1]})
+					ElementSettings.MultipleOptions = ElementSettings.MultipleOptions or false
+					ElementSettings.Special = ElementSettings.Special or 0
+
+					local Element = {
+						Values = ElementSettings,
+						Instances = {},
+						State = false
+					}
+
+					Element.Instances.Element = GroupboxTemplateInstance.Dropdown_TEMPLATE:Clone()
+					Element.Instances.Element.Parent = Groupbox.ParentingItem
+					Element.Instances.Element.Visible = true
+
+					Element.Instances.Element.Name = "DROPDOWN_" .. ElementSettings.Name
+					Element.Instances.Element.Header.Text = ElementSettings.Name
+
+					Element.Instances.Popup = mainWindow["Popup Overlay"].Dropdown_TEMPLATE:Clone()
+					Element.Instances.Popup.Parent = mainWindow["Popup Overlay"]
+					Element.Instances.Popup.Header.Text = ElementSettings.Name
+
+					--// Interaction System \\--
+					local _dropdownOutsideConn = nil
+					Element.Instances.Element.Icon.MouseButton1Click:Connect(function()
+						mainWindow["Popup Overlay"].Visible = true
+						Element.Instances.Popup.Visible = true
+
+						if _dropdownOutsideConn then _dropdownOutsideConn:Disconnect() end
+						_dropdownOutsideConn = UserInputService.InputBegan:Connect(function(i, g)
+							if g or i.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+							local p, pos, size = i.Position, Element.Instances.Popup.AbsolutePosition, Element.Instances.Popup.AbsoluteSize
+							if not (p.X >= pos.X and p.X <= pos.X + size.X and p.Y >= pos.Y and p.Y <= pos.Y + size.Y) then
+								mainWindow["Popup Overlay"].Visible = false
+								Element.Instances.Popup.Visible = false
+								if _dropdownOutsideConn then _dropdownOutsideConn:Disconnect(); _dropdownOutsideConn = nil end
+							end
+						end)
+					end)
+
+					local function ActivateColorSingle(name)
+						for _, Option in pairs(Element.Instances.Popup.Content:GetChildren()) do
+							if Option.ClassName == "Frame" and not string.find(Option.Name, "Option_Template") then
+								Tween(Option, {BackgroundTransparency = 1})
+								Tween(Option.Header, {TextColor3 = Color3.fromRGB(100, 100, 100)})
+								Option.Header.Accent.Enabled = false
+								Option.Icon.Accent.Enabled = false
+							end
+						end
+
+						Tween(Element.Instances.Popup.Content[name], {BackgroundTransparency = 0.8})
+						Tween(Element.Instances.Popup.Content[name].Header, {TextColor3 = Color3.fromRGB(255,255,255)})
+						Element.Instances.Popup.Content[name].Header.Accent.Enabled = true
+						Element.Instances.Popup.Content[name].Icon.Accent.Enabled = true
+
+					end
+
+					local function CB(Sel, Func)
+						local Success, Response = pcall(function()
+							ElementSettings.Callback(Sel)
+						end)
+
+						if Success and Func then
+							Func()
+						end
+					end
+
+					local function Refresh()
+						for i,v in pairs(ElementSettings.Options) do
+							local Option = Element.Instances.Popup.Content.Option_TEMPLATE:Clone()
+							local OptionHover = false
+
+							Option.Header.Text = v
+							Option.Name = v
+
+							Option.Interact.MouseButton1Click:Connect(function()
+								local Selected
+								if ElementSettings.MultipleOptions then
+									if table.find(ElementSettings.CurrentOption, v) then
+										RemoveTable(ElementSettings.CurrentOption, v)
+
+										if not OptionHover then
+											Tween(Option.Header, {TextColor3 = Color3.fromRGB(100, 100, 100)})
+										end
+										Option.BackgroundTransparency = 1
+										Option.Header.Accent.Enabled = false
+										Option.Icon.Accent.Enabled = false
+									else
+										table.insert(ElementSettings.CurrentOption, v)
+										Tween(Option.Header, {TextColor3 = Color3.fromRGB(255, 255, 255)})
+										Option.BackgroundTransparency = 0.8
+										Option.Header.Accent.Enabled = true
+										Option.Icon.Accent.Enabled = true
+									end
+									Selected = ElementSettings.CurrentOption
+
+								else
+									ElementSettings.CurrentOption = {v}
+									Selected = v
+
+									ActivateColorSingle(v)
+								end
+
+								CB(Selected, function()
+									if ElementSettings.MultipleOptions then
+										if not ElementSettings.CurrentOption and type(ElementSettings.CurrentOption) == "table" then
+											ElementSettings.CurrentOption = {}
+										end
+									end
+								end)
+							end)
+
+							Option.Visible = true
+							Option.Parent = Element.Instances.Popup.Content
+
+							Option.Interact.MouseEnter:Connect(function()
+								OptionHover = true
+								if Option.Header.Accent.Enabled then
+									return
+								else
+									Tween(Option.Header, {TextColor3 = Color3.fromRGB(200,200,200)})
+								end
+							end)
+
+							Option.Interact.MouseLeave:Connect(function()
+								OptionHover = false
+								if Option.Header.Accent.Enabled then
+									return
+								else
+									Tween(Option.Header, {TextColor3 = Color3.fromRGB(100,100,100)})
+								end
+							end)
+
+						end
+					end
+
+					Refresh()
+
+					if ElementSettings.CurrentOption then
+						if type(ElementSettings.CurrentOption) == "string" then
+							ElementSettings.CurrentOption = {ElementSettings.CurrentOption}
+						end
+						if not ElementSettings.MultipleOptions and type(ElementSettings.CurrentOption) == "table" then
+							ElementSettings.CurrentOption = {ElementSettings.CurrentOption[1]}
+						end
+					else
+						ElementSettings.CurrentOption = {}
+					end
+
+					local Selected, ind = nil,0
+					for i,v in pairs(ElementSettings.CurrentOption) do
+						ind = ind + 1
+					end
+					if ind == 1 then Selected = ElementSettings.CurrentOption[1] else Selected = ElementSettings.CurrentOption end
+					CB(Selected)
+					if type(Selected) == "string" then
+						Tween(Element.Instances.Popup.Content[Selected], {BackgroundTransparency = 0.8})
+						Tween(Element.Instances.Popup.Content[Selected].Header, {TextColor3 = Color3.fromRGB(255,255,255)})
+						Element.Instances.Popup.Content[Selected].Header.Accent.Enabled = true
+						Element.Instances.Popup.Content[Selected].Icon.Accent.Enabled = true
+					else
+						for i,v in pairs(Selected) do
+							Tween(Element.Instances.Popup.Content[Selected], {BackgroundTransparency = 0.8})
+							Tween(Element.Instances.Popup.Content[Selected].Header, {TextColor3 = Color3.fromRGB(255,255,255)})
+							Element.Instances.Popup.Content[Selected].Header.Accent.Enabled = true
+							Element.Instances.Popup.Content[Selected].Icon.Accent.Enabled = true
+						end
+					end
+
+					if ElementSettings.MultipleOptions then
+						if not ElementSettings.CurrentOption and type(ElementSettings.CurrentOption) == "table" then
+							ElementSettings.CurrentOption = {}
+						end
+					end
+
+					function Element:Destroy()
+						Element.Instance:Destroy()
+					end
+
+					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = Element
+					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
+				end
+
+				function Groupbox:CreateBind(ElementSettings) -- will be merged with toggles and labels soon
+
+					--[[
+					ElementSettings = {
+						Name = string,
+						Icon = number, **
+						ImageSource = string, **
+						HoldToInteract = bool, **
+						CurrentValue = string,
+						SyncToggleState = bool, ** -- required to be made on toggle to use, coming soon
+
+						-- if creating on a parent toggle, do not create the callback here. create it in the parent toggle, it will sync automatically
+						Callback = function(bool), -- Returns bool whether the bind is active or not. If HoldToInteract is true, it is recommended to put your script in a while boolean do loop
+						ChangedCallback = function(string), ** -- Returns the new keybind as a string (See the documentation list for all keybinds to string)
+					}
+					]]
+
+					ElementSettings.ImageSource = ElementSettings.ImageSource or "Material"
+					ElementSettings.HoldToInteract = ElementSettings.HoldToInteract or false
+					ElementSettings.SyncToggleState = ElementSettings.SyncToggleState or true
+					ElementSettings.ChangedCallback = ElementSettings.ChangedCallback or function() end
+
+					local Element = {
+						Values = ElementSettings,
+					}
+
+					Element.Instance = GroupboxTemplateInstance.Bind_TEMPLATE:Clone()
+					Element.Instance.Visible = true
+					Element.Instance.Parent = Groupbox.ParentingItem
+
+					Element.Instance.Name = "BIND_" .. ElementSettings.Name
+					Element.Instance.Header.Text = ElementSettings.Name
+					Element.Instance.Header.Icon.Visible = ElementSettings.Icon ~= nil
+					if Element.Instance.Header.Icon.Visible == false then
+						Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,6)
+					else
+						Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,32)
+					end
+					Element.Instance.Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
+
+					local CheckingForKey = false
+					local Active = false
+
+					Element.Instance.Bind.Text = ElementSettings.CurrentValue
+
+					Element.Instance.Bind.Focused:Connect(function()
+						task.wait()
+						CheckingForKey = true
+					end)
+
+					Element.Instance.Bind.FocusLost:Connect(function()
+						CheckingForKey = false
+						if Element.Instance.Bind.Text == (nil or "") then
+							Element.Instance.Bind.Text = ElementSettings.CurrentValue
+						end
+					end)
+
+					UserInputService.InputBegan:Connect(function(input, processed)
+
+						if CheckingForKey then
+
+							if input.UserInputType == Enum.UserInputType.Keyboard then
+								if input.KeyCode ~= Enum.KeyCode.Unknown and input.KeyCode ~= Enum.KeyCode[EliteUI.WindowKeybind] then
+									local SplitMessage = string.split(tostring(input.KeyCode), ".")
+									local NewKeyNoEnum = SplitMessage[3]
+									Element.Instance.Bind.Text = tostring(NewKeyNoEnum)
+									Element.Values.CurrentValue = tostring(NewKeyNoEnum)
+									local Success,Response = pcall(function()
+										Element.Values.ChangedCallback(Element.Values.CurrentValue)
+									end)
+
+									if not Success then
+										Element.Instance.Header.Text = "Callback Error"
+										warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
+										task.wait(0.5)
+										Element.Instance.Header.Text = ElementSettings.Name
+									end
+									Element.Instance.Bind:ReleaseFocus()
+								end
+							else
+								if input.UserInputType == Enum.UserInputType.MouseButton1 then
+									Element.Instance.Bind.Text = "MB1"
+									Element.Values.CurrentValue = "MB1"
+									Element.Instance.Bind:ReleaseFocus()
+									local Success,Response = pcall(function()
+										Element.Values.ChangedCallback(Element.Values.CurrentValue)
+									end)
+
+									if not Success then
+										Element.Instance.Header.Text = "Callback Error"
+										warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
+										task.wait(0.5)
+										Element.Instance.Header.Text = ElementSettings.Name
+									end
+								elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+									Element.Instance.Bind.Text = "MB2"
+									Element.Values.CurrentValue = "MB2"
+									Element.Instance.Bind:ReleaseFocus()
+									local Success,Response = pcall(function()
+										Element.Values.ChangedCallback(Element.Values.CurrentValue)
+									end)
+
+									if not Success then
+										Element.Instance.Header.Text = "Callback Error"
+										warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
+										task.wait(0.5)
+										Element.Instance.Header.Text = ElementSettings.Name
+									end
+								end
+							end
+
+						elseif Element.Values.CurrentValue ~= nil and not processed then
+
+							if Element.Values.CurrentValue == "MB1" then
+								if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+									return
+								end
+							elseif Element.Values.CurrentValue == "MB2" then
+								if input.UserInputType ~= Enum.UserInputType.MouseButton2 then
+									return
+								end
+							else
+								if input.KeyCode ~= Enum.KeyCode[Element.Values.CurrentValue] then
+									return
+								end
+							end
+
+							local Held = true
+							local Connection
+							Connection = input.Changed:Connect(function(prop)
+								if prop == "UserInputState" then
+									Connection:Disconnect()
+									Held = false
+								end
+							end)
+
+							if not Element.Values.HoldToInteract then
+								Active = not Active
+								local Success,Response = pcall(function()
+									Element.Values.Callback(Active)
+								end)
+
+								if not Success then
+									Element.Instance.Header.Text = "Callback Error"
+									warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
+									task.wait(0.5)
+									Element.Instance.Header.Text = ElementSettings.Name
+								end
+							else
+								task.wait(0.1)
+								if Held then
+									local Loop; Loop = RunService.Stepped:Connect(function()
+										if not Held then
+											local Success,Response = pcall(function()
+												Element.Values.Callback(Active)
+											end)
+
+											if not Success then
+												Element.Instance.Header.Text = "Callback Error"
+												warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
+												task.wait(0.5)
+												Element.Instance.Header.Text = ElementSettings.Name
+											end
+											Loop:Disconnect()
+										else
+											local Success,Response = pcall(function()
+												Element.Values.Callback(Active)
+											end)
+
+											if not Success then
+												Element.Instance.Header.Text = "Callback Error"
+												warn("EliteUI | Error"..ElementSettings.Name.." Callback Error")
+												task.wait(0.5)
+												Element.Instance.Header.Text = ElementSettings.Name
+											end
+										end
+									end)
+								end
+							end
+						end
+					end)
+
+					function Element:Set(NewElementSettings)
+						for i,v in pairs(ElementSettings) do
+							if NewElementSettings[i] == nil then
+								NewElementSettings[i] = v
+							end
+						end
+
+						ElementSettings = NewElementSettings
+
+						Element.Values = ElementSettings
+
+						Element.Instance.Name = "BIND_" .. ElementSettings.Name
+						Element.Instance.Header.Text = ElementSettings.Name
+						Element.Instance.Header.Icon.Visible = ElementSettings.Icon ~= nil
+						if Element.Instance.Header.Icon.Visible == false then
+							Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,6)
+						else
+							Element.Instance.Header.UIPadding.PaddingLeft = UDim.new(0,32)
+						end
+						Element.Instance.Header.Icon.Image = ElementSettings.Icon ~= nil and "rbxassetid://" .. Element.Values.Icon or ""
+
+						Element.Instance.Bind.Text = ElementSettings.CurrentValue
+
+						EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name].Values = ElementSettings
+					end
+
+					function Element:Destroy()
+						Element.Instance:Destroy()
+					end
+
+					EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name] = Element
+					return EliteUI.Window.TabSections[Name].Tabs[TabIndex].Groupboxes[GroupIndex].Elements[ElementSettings.Name]
+				end
+
+				]=]
 
 				function Groupbox:CreateButton(ElementSettings, Index)
 					--[[
