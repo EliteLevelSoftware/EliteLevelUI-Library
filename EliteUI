@@ -22,7 +22,7 @@
 
 ]]
 
-local Release = "v3.43"
+local Release = "v3.44"
 local debugV = false
 
 local EliteUI = {
@@ -3513,10 +3513,21 @@ local buildAttempts = 0
 local correctBuild = false
 local warned = false
 
+local function modelIsValid(inst)
+	if not inst then return false end
+	if not inst:FindFirstChild("Resources") then return false end
+	if not inst:FindFirstChild("MainWindow") then return false end
+	local res = inst.Resources
+	if not res:FindFirstChild("Build") then return false end
+	if res.Build.Value ~= EliteUI.InterfaceBuild then return false end
+	if not res:FindFirstChild("Elements") then return false end
+	local mw = inst.MainWindow
+	if not mw:FindFirstChild("Content") then return false end
+	return true
+end
+
 repeat
-	if EliteUIInstance.Resources:FindFirstChild("Build")
-		and EliteUIInstance.Resources.Build.Value == EliteUI.InterfaceBuild
-	then
+	if modelIsValid(EliteUIInstance) then
 		correctBuild = true
 		break
 	end
@@ -3530,8 +3541,9 @@ repeat
 	end
 
 	buildAttempts += 1
+	if not isStudio then task.wait(0.2) end
 
-until buildAttempts >= 2
+until buildAttempts >= 4
 
 if not correctBuild then
 	warn("[EliteUI] Build mismatch — expected " .. tostring(EliteUI.InterfaceBuild)
