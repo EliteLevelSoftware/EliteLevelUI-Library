@@ -22,7 +22,7 @@
 
 ]]
 
-local Release = "v3.46"
+local Release = "v3.47"
 local debugV = false
 
 local EliteUI = {
@@ -3510,10 +3510,12 @@ local modelId = debugV and 136653172778765 or 90058405618888
 -- Brief wait before first fetch — gives Roblox's asset CDN time to fully
 -- cache the model. Without this, a partial model can be returned when the
 -- script runs after a delay (e.g. after KeyScreen validation).
-if not isStudio then task.wait(0.5) end
+if not isStudio then task.wait(1) end
 
 local EliteUIInstance: ScreenGui = isStudio and script.Parent:WaitForChild("EliteUI V1")
 	or game:GetObjects("rbxassetid://" .. modelId)[1]
+-- Wait for model children to fully stream in after GetObjects
+if not isStudio then task.wait(0.3) end
 local buildAttempts = 0
 local correctBuild = false
 local warned = false
@@ -3546,11 +3548,13 @@ repeat
 	if toDestroy and not isStudio then
 		toDestroy:Destroy()
 	end
+	-- Wait for children to stream in before checking validity
+	if not isStudio then task.wait(0.3) end
 
 	buildAttempts += 1
-	if not isStudio then task.wait(0.2) end
+	if not isStudio then task.wait(0.5) end
 
-until buildAttempts >= 4
+until buildAttempts >= 5
 
 if not correctBuild then
 	warn("[EliteUI] Build mismatch — expected " .. tostring(EliteUI.InterfaceBuild)
@@ -4092,6 +4096,19 @@ function EliteUI:CreateWindow(WindowSettings)
 		Values = WindowSettings,
 	}
 
+	-- Ensure deep model children are streamed before accessing them.
+	-- GetObjects can return a model with top-level children present but
+	-- deeper descendants not yet loaded (Roblox CDN streaming). Waiting
+	-- here gives the engine time to fully populate the model.
+	if not isStudio then
+		pcall(function()
+			mainWindow:WaitForChild("Content", 5)
+			mainWindow.Content:WaitForChild("ContentMain", 5)
+			mainWindow.Content:WaitForChild("Topbar", 5)
+			mainWindow:WaitForChild("New Loading Screen", 5)
+		end)
+	end
+
 		do
 		-- Transparency event handler (acrylic removed, transparency slider still works)
 		transparencyEvent.Event:Connect(function()
@@ -4143,7 +4160,7 @@ function EliteUI:CreateWindow(WindowSettings)
 			end
 		end)
 
-		mainWindow.Content.ContentMain.Elements.Tab_TEMPLATE.Visible = false
+		pcall(function() mainWindow.Content.ContentMain.Elements.Tab_TEMPLATE.Visible = false end)
 		local loadingScreenLogoChanged = false
 
 		mainWindow["New Loading Screen"].Visible = true
